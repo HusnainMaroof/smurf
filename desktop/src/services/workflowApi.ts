@@ -1,6 +1,6 @@
 /** Server workflow persistence API (M1-09). */
 
-import type { CompilerWorkflow } from './workflowFormat';
+import type { CompilerEdge, CompilerNode, CompilerWorkflow } from './workflowFormat';
 
 import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
@@ -9,6 +9,26 @@ export type WorkflowListItem = {
   name: string;
   source: 'template' | 'user';
   readOnly: boolean;
+  description?: string;
+};
+
+export type GraphNode = {
+  id: string;
+  type: string;
+  name?: string;
+  params?: Record<string, unknown>;
+  position?: [number, number];
+};
+
+export type GraphEdge = { from: string; port?: string; to: string };
+
+export type Graph = {
+  id?: string;
+  name: string;
+  description?: string;
+  start: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 };
 
 type ApiError = { detail?: { message?: string; errors?: string[] } };
@@ -24,84 +44,101 @@ async function parseError(response: Response): Promise<string> {
   }
 }
 
+/** Map a smurf-server workflow graph onto the canvas/compiler shape. */
+export function graphToCompiler(id: string, g: Graph): CompilerWorkflow {
+  const nodes: CompilerNode[] = [
+    { id: 'start', type: 'start', data: {} },
+    ...g.nodes.map((node): CompilerNode => {
+      const type = node.type.startsWith('human.')
+        ? 'human_gate'
+        : node.type.startsWith('verify.')
+          ? 'check'
+          : 'agent_task';
+      return {
+        id: node.id,
+        type,
+        position: node.position ? { x: node.position[0], y: node.position[1] } : undefined,
+        data: {
+          agent: node.type,
+          instruction: node.name ?? node.type,
+          params: node.params ?? {},
+        },
+      };
+    }),
+  ];
+
+  let edgeIdx = 1;
+  const edges: CompilerEdge[] = [{ id: `e${edgeIdx++}`, source: 'start', target: g.start }];
+  for (const edge of g.edges) {
+    const compilerEdge: CompilerEdge = {
+      id: `e${edgeIdx++}`,
+      source: edge.from,
+      target: edge.to,
+    };
+    const port = edge.port ?? 'out';
+    if (port !== 'out') {
+      compilerEdge.data = { when: port };
+    }
+    edges.push(compilerEdge);
+  }
+
+  return {
+    id,
+    name: g.name,
+    version: 1,
+    nodes,
+    edges,
+    description: g.description,
+  };
+}
+
 export async function fetchTemplateIds(): Promise<string[]> {
-  const res = await serverFetch(`${BASE}/api/workflows/templates`);
-  if (!res.ok) throw new Error(await parseError(res));
-  const body = (await res.json()) as { workflow_ids: string[] };
-  return body.workflow_ids;
+  return [];
 }
 
 export async function fetchUserIds(): Promise<string[]> {
   const res = await serverFetch(`${BASE}/api/workflows/user`);
   if (!res.ok) throw new Error(await parseError(res));
-  const body = (await res.json()) as { workflow_ids: string[] };
-  return body.workflow_ids;
+  const body = (await res.json()) as { workflows: Graph[] };
+  return body.workflows.map((wf) => wf.id ?? '');
 }
 
-export async function loadTemplateWorkflow(id: string): Promise<CompilerWorkflow> {
-  const res = await serverFetch(`${BASE}/api/workflows/templates/${id}`);
-  if (!res.ok) throw new Error(await parseError(res));
-  const body = (await res.json()) as { workflow: CompilerWorkflow };
-  return body.workflow;
+export async function loadTemplateWorkflow(_id: string): Promise<CompilerWorkflow> {
+  throw new Error('no templates');
 }
 
 export async function loadUserWorkflow(id: string): Promise<CompilerWorkflow> {
   const res = await serverFetch(`${BASE}/api/workflows/user/${id}`);
   if (!res.ok) throw new Error(await parseError(res));
-  const body = (await res.json()) as { workflow: CompilerWorkflow };
-  return body.workflow;
+  const body = (await res.json()) as { graph: Graph };
+  return graphToCompiler(id, body.graph);
 }
 
 export async function loadWorkflowById(id: string): Promise<CompilerWorkflow> {
-  try {
-    return await loadTemplateWorkflow(id);
-  } catch {
-    return loadUserWorkflow(id);
-  }
+  return loadUserWorkflow(id);
 }
 
-export async function saveUserWorkflow(workflow: CompilerWorkflow): Promise<void> {
-  const res = await serverFetch(`${BASE}/api/workflows/user`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflow }),
-  });
-  if (!res.ok) throw new Error(await parseError(res));
+export async function saveUserWorkflow(_workflow: CompilerWorkflow): Promise<void> {
+  throw new Error('Editing workflows from the app is not available yet; edit workflows/*.json');
 }
 
-export async function validateWorkflow(workflow: CompilerWorkflow): Promise<void> {
-  const res = await serverFetch(`${BASE}/api/workflows/validate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflow }),
-  });
-  if (!res.ok) throw new Error(await parseError(res));
+export async function validateWorkflow(_workflow: CompilerWorkflow): Promise<void> {
+  // smurf-server validates on save; nothing to check from the app.
 }
 
-export async function deleteUserWorkflow(id: string): Promise<void> {
-  const res = await serverFetch(`${BASE}/api/workflows/user/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(await parseError(res));
+export async function deleteUserWorkflow(_id: string): Promise<void> {
+  throw new Error('Editing workflows from the app is not available yet; edit workflows/*.json');
 }
 
 export async function listWorkflowItems(): Promise<WorkflowListItem[]> {
-  const users = await fetchUserIds();
-  const items: WorkflowListItem[] = [];
-
-  for (const id of users) {
-    try {
-      const wf = await loadUserWorkflow(id);
-      items.push({
-        id,
-        name: wf.name,
-        source: 'user',
-        readOnly: false,
-        icon: wf.icon,
-        description: wf.description,
-      });
-    } catch {
-      items.push({ id, name: id, source: 'user', readOnly: false });
-    }
-  }
-
-  return items;
+  const res = await serverFetch(`${BASE}/api/workflows/user`);
+  if (!res.ok) throw new Error(await parseError(res));
+  const body = (await res.json()) as { workflows: Graph[] };
+  return body.workflows.map((graph) => ({
+    id: graph.id ?? '',
+    name: graph.name,
+    source: 'user',
+    readOnly: true,
+    description: graph.description,
+  }));
 }
