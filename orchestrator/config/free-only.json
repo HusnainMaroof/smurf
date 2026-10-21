@@ -1,0 +1,9 @@
+{
+  "_about": "ORCH_CONFIG override: free models only (no Claude/Codex/OpenAI usage), no premium tier. Use: ORCH_CONFIG=config/free-only.json node src/cli.ts ...",
+  "providers": {
+    "claude": { "enabled": false },
+    "codex": { "enabled": false },
+    "openai": { "enabled": false }
+  },
+  "router": { "premium": "never" }
+}

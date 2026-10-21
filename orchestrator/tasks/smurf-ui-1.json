@@ -1,0 +1,46 @@
+[
+  {
+    "id": "workflow-api",
+    "title": "Workflows screen: read smurf-server workflow graphs",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 30,
+    "files": ["desktop/src/services/workflowApi.ts", "desktop/src/services/workflowApi.test.ts"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "The desktop app (React + TypeScript, folder desktop/) shows workflows on the 'Workflows SOP' screen through desktop/src/services/workflowApi.ts. That file still expects the OLD backend's shapes and crashes with 'users is not iterable'. Rewrite it for the NEW backend (smurf-server).\n\nNEW backend endpoints (use the existing helpers `serverFetch` and `SERVER_BASE` imported from './serverUrl', exactly as the file does today):\n- GET  /api/workflows/user  -> { workflows: Graph[] }\n- GET  /api/workflows/user/<id> -> { graph: Graph }\n- PUT  /api/workflows/user/<id> body { graph: Graph } -> { status: 'saved' | 'invalid', problems: string[] }\nThere are NO template endpoints and NO validate endpoint any more.\n\nGraph type (add it to workflowApi.ts and export it):\n  type GraphNode = { id: string; type: string; name?: string; params?: Record<string, unknown>; position?: [number, number] };\n  type GraphEdge = { from: string; port?: string; to: string };\n  type Graph = { id?: string; name: string; description?: string; start: string; nodes: GraphNode[]; edges: GraphEdge[] };\n\nRequired changes in workflowApi.ts:\n1. Export a pure function `graphToCompiler(id: string, g: Graph): CompilerWorkflow` (CompilerWorkflow is imported from './workflowFormat' - read that file for its exact fields and follow them). Mapping: add a node {id:'start', type:'start'} with an edge to g.start; every graph node becomes a node whose type is 'human_gate' if node.type starts with 'human.', 'check' if it starts with 'verify.', otherwise 'agent_task'; its data holds { agent: node.type, instruction: node.name ?? node.type, params: node.params ?? {} }; position from node.position ([x,y] -> {x,y}). Every graph edge becomes an edge from->to; put the port name (edge.port ?? 'out') in the edge data under the key the CompilerEdge type uses for branch labels (check workflowFormat.ts) only if it is not 'out'. Use name = g.name and description = g.description.\n2. fetchUserIds(): read { workflows } and return the ids (workflow.id).\n3. loadUserWorkflow(id): GET /api/workflows/user/<id>, return graphToCompiler(id, body.graph).\n4. fetchTemplateIds() returns [] without any request; loadTemplateWorkflow throws Error('no templates'); loadWorkflowById(id) = loadUserWorkflow(id); validateWorkflow resolves without a request.\n5. saveUserWorkflow and deleteUserWorkflow: throw Error('Editing workflows from the app is not available yet; edit workflows/*.json') without a request.\n6. listWorkflowItems(): one request to GET /api/workflows/user, map each graph to { id, name, source: 'user', readOnly: true, description }. Keep the exported names and signatures so other files keep compiling.\n\nAlso create desktop/src/services/workflowApi.test.ts (vitest) with at least 3 tests for graphToCompiler: start node + edge to g.start; 'human.approval' -> 'human_gate' and 'verify.evidence' -> 'check'; a port like 'retry' is kept on the edge while 'out' is not. Do not change any other file."
+  },
+  {
+    "id": "models-panel",
+    "title": "Settings: Smurf models, router ranking and benchmarks panel",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 40,
+    "files": [
+      "desktop/src/services/smurfApi.ts",
+      "desktop/src/services/smurfApi.test.ts",
+      "desktop/src/components/SmurfModelsPanel.tsx",
+      "desktop/src/components/SystemPreferencesModal.tsx"
+    ],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "The desktop app (React 19 + TypeScript + Tailwind, folder desktop/) has a Settings modal (desktop/src/components/SystemPreferencesModal.tsx) whose Models tab renders the old <ModelsManager .../> component (around line 364). That component calls endpoints the new backend does not have. Replace it with a new read-only panel for the new backend (smurf-server).\n\n1. Create desktop/src/services/smurfApi.ts. Use `serverJson` from './serverUrl' (signature: serverJson<T>(path: string, fallback: T): Promise<T>; it adds auth and returns the fallback on errors). Export types and functions:\n  type SmurfModel = { key: string; adapter: string; model: string; tier: 'light'|'standard'|'strong'|'premium'; free: boolean; billing?: string; contextLength?: number; modes: string[]; cooling?: { reason: string; until: string } };\n  fetchModels(): Promise<{ models: SmurfModel[]; skipped: string[]; refreshed?: string }>  -> GET /api/models (fallback { models: [], skipped: [] })\n  type RouteCandidate = { key: string; score: number; why: string; parts: Record<string, number> };\n  fetchRoute(category: string): Promise<{ candidates: RouteCandidate[]; dropped: Record<string, number> }> -> GET /api/route?category=<category> (fallback { candidates: [], dropped: {} })\n  type BenchmarkRun = { id: string; date: string; passed: number; total: number; rows: { task: string; category: string; model: string; pass: boolean; sec: number }[] };\n  fetchBenchmarks(): Promise<BenchmarkRun[]> -> GET /api/benchmarks (fallback [])\n  Also export a pure helper groupByAdapter(models: SmurfModel[]): Record<string, SmurfModel[]> (adapter -> models sorted by key).\n2. Create desktop/src/services/smurfApi.test.ts (vitest) testing groupByAdapter (grouping and sorting) with at least 2 tests.\n3. Create desktop/src/components/SmurfModelsPanel.tsx (default export or named export SmurfModelsPanel, no props). Three sections, clean and compact, matching the app's existing light Tailwind style (look at ModelsManager.tsx for class names to reuse):\n  a) 'Models': counts per adapter, then a table per adapter (model, tier, billing/free, cooling badge with reason if cooling). A Refresh button re-fetches.\n  b) 'Router ranking': a <select> of categories [coding, debugging, testing, research, review, architecture, docs]; shows the top 10 candidates with score (2 decimals), the 'why' text, and small bars or numbers for parts (benchmark, correctness, tools, context, latency, cost).\n  c) 'Benchmarks': list of runs (date, passed/total) with an expandable row table (task, category, model, PASS/FAIL, seconds).\n  Show a short loading state and an empty state; never throw.\n4. In SystemPreferencesModal.tsx, render <SmurfModelsPanel /> instead of <ModelsManager ... /> for the models tab and remove the now-unused ModelsManager import and props from that file only if they become unused. Do not change other files."
+  },
+  {
+    "id": "agents-map",
+    "title": "Agents list: map smurf agent profiles",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 25,
+    "files": ["desktop/src/services/agentApi.ts", "desktop/src/services/agentApi.test.ts"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "In the desktop app (folder desktop/), desktop/src/services/agentApi.ts fetchAgents() calls GET /api/agents. The new backend (smurf-server) returns a bare JSON array of agent profiles:\n  type SmurfAgentProfile = { id: string; category: string; name: string; mode: 'edit'|'readonly'; minTier: string; timeoutMin: number; review: string; description: string };\nToday fetchAgents ignores that array and shows only the built-in agent.\n\nChange agentApi.ts:\n1. Export a pure function `profileToAgent(p: SmurfAgentProfile): Agent` mapping to the app's Agent type (import type { Agent } from '../types' - read desktop/src/types.ts and fill every REQUIRED field of Agent with sensible values: id = 'smurf-' + p.id, name = p.name, a description/markdown-like field = p.description plus a line 'Category: <category>, mode: <mode>, min tier: <minTier>, review: <review>'; for any field naming an agent type/engine use the string 'smurf'). Mark it read-only if the Agent type has such a flag.\n2. fetchAgents(): if the response body is an array, map it with profileToAgent and pass the result to mergeAgentsWithBuiltin (keep the existing behaviour for the old `{agents}` shape and for unsupported responses).\n3. saveAgents(): if the server answers 404/405 (use isUnsupported(response) already imported), resolve without throwing.\n4. Create desktop/src/services/agentApi.test.ts (vitest) with at least 2 tests for profileToAgent (id prefix, name, description contains the category).\nDo not change other files."
+  }
+]

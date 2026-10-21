@@ -15,6 +15,8 @@ const HELP = `orch: a senior model managing a team of coding agents
                                          register a project (vault/Projects/N.md)
   orch run <project> "<request>" [--workflow default]
                                          start a run; it stops when it needs you
+  orch run-tasks <project> <tasks.json> ["<request>"]
+                                         run preset tasks without senior planning (workflow "tasks")
   orch resume <run> [--choice C] [--note "..."]
                                          answer a waiting run (approve, reject, accept, retry,
                                          reassign, skip, abort, answer) and continue
@@ -110,6 +112,31 @@ async function main() {
       if (!project || !words.length) throw new Error('usage: orch run <project> "<request>"');
       printEvents(engine);
       summary(await engine.start(project, words.join(" "), flag("--workflow") || "default"));
+      break;
+    }
+    case "run-tasks": {
+      const [project, file, ...words] = args;
+      if (!project || !file) throw new Error("usage: orch run-tasks <project> <tasks.json> [request]");
+      const raw = readJson<any[]>(path.resolve(file), []);
+      if (!Array.isArray(raw) || !raw.length) throw new Error(`${file}: expected a JSON array of tasks`);
+      const tasks = raw.map((r, i) => ({
+        id: String(r.id || `t${i + 1}`),
+        title: String(r.title || r.id),
+        category: (CATEGORIES as readonly string[]).includes(r.category) ? r.category : "coding",
+        risk: (["low", "medium", "high"].includes(r.risk) ? r.risk : "medium") as Risk,
+        brief: String(r.brief || ""),
+        files: (r.files || []).map(String),
+        deps: (r.deps || []).map(String),
+        checks: r.checks || [],
+        status: "pending" as const,
+        attempts: [],
+        excluded: [],
+        reassigns: 0,
+        ...(r.timeoutMin ? { timeoutMin: Number(r.timeoutMin) } : {}),
+      }));
+      printEvents(engine);
+      const request = words.join(" ") || `Preset tasks: ${tasks.map((t) => t.id).join(", ")}`;
+      summary(await engine.startWith({ project: engine.vault.project(project), request, workflow: flag("--workflow") || "tasks", tasks }));
       break;
     }
     case "resume": {
