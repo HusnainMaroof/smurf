@@ -7,3 +7,4 @@ desktop/src-tauri/gen/
 smurf-data/
 *.log
 .claude/worktrees/
+.claude/settings.local.json
