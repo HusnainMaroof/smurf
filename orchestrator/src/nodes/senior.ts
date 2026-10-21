@@ -151,7 +151,14 @@ export const seniorNodes: NodeType[] = [
       if (decision === "accept" && confirm && ev) {
         const diff = fs.existsSync(ev.diffFile) ? fs.readFileSync(ev.diffFile, "utf8") : "";
         const review = a.review ? `${a.review.score}/100 ${a.review.verdict}\n${a.review.findings.map((f) => `- [${f.severity}] ${f.issue}`).join("\n")}` : undefined;
-        const { data } = await engine.senior<{ decision: Decision; reason: string; critique?: string }>(s, "confirm", confirmPrompt({ t, ev, diff, review }));
+        const data = await engine
+          .senior<{ decision: Decision; reason: string; critique?: string }>(s, "confirm", confirmPrompt({ t, ev, diff, review }))
+          .then((r) => r.data)
+          .catch((e: Error) => {
+            // no senior to confirm: the owner decides this one task instead of the whole run failing
+            log(`${t.id}: ${e.message}; asking the owner to confirm`);
+            return { decision: "escalate" as Decision, reason: "no senior model available to confirm this high-risk change", critique: undefined as string | undefined };
+          });
         if (["accept", "retry", "reassign", "escalate"].includes(data.decision) && data.decision !== "accept") {
           decision = data.decision;
           reason = `senior: ${data.reason}`;

@@ -375,6 +375,12 @@ export class Engine extends EventEmitter {
     let lastErr = "";
     for (const key of keys) {
       if (this.models.coolingDown(key)) continue;
+      try {
+        this.models.adapter(key);
+      } catch {
+        lastErr = `${key}: provider not enabled`; // e.g. claude:opus under config/free-only.json
+        continue;
+      }
       for (let i = 0; i < 2; i++) {
         const res = await this.runModel(s, key, {
           mode: "readonly",
