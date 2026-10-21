@@ -1,4 +1,4 @@
-import { serverJson } from './serverUrl';
+import { serverFetch, serverJson } from './serverUrl';
 
 export type SmurfModel = {
   key: string;
@@ -45,6 +45,52 @@ export type RouteResult = {
   candidates: RouteCandidate[];
   dropped: Record<string, number>;
 };
+
+export type SeniorOption = {
+  key: string;
+  tier: 'strong' | 'premium';
+  billing: 'free' | 'subscription' | 'metered';
+  cooling: boolean;
+};
+
+export type SeniorsResult = {
+  default: string[];
+  options: SeniorOption[];
+};
+
+export async function fetchSeniors(): Promise<SeniorsResult> {
+  return serverJson<SeniorsResult>('/api/seniors', { default: [], options: [] });
+}
+
+export async function setSessionSenior(runId: string, key: string): Promise<boolean> {
+  const response = await serverFetch(`/api/sessions/${encodeURIComponent(runId)}/senior`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ senior: key }),
+  });
+  return response.ok;
+}
+
+const BILLING_RANK: Record<SeniorOption['billing'], number> = {
+  free: 0,
+  subscription: 1,
+  metered: 2,
+};
+
+const TIER_RANK: Record<SeniorOption['tier'], number> = {
+  premium: 0,
+  strong: 1,
+};
+
+export function sortSeniors(options: SeniorOption[]): SeniorOption[] {
+  return [...options].sort(
+    (a, b) =>
+      Number(a.cooling) - Number(b.cooling) ||
+      BILLING_RANK[a.billing] - BILLING_RANK[b.billing] ||
+      TIER_RANK[a.tier] - TIER_RANK[b.tier] ||
+      a.key.localeCompare(b.key),
+  );
+}
 
 export async function fetchModels(): Promise<ModelsResult> {
   return serverJson<ModelsResult>('/api/models', { models: [], skipped: [] });
