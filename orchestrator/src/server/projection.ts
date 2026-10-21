@@ -50,6 +50,7 @@ export interface UiState {
   waiting?: { kind: string; question: string; options: string[]; taskId?: string } | null;
   engine_status?: RunState["status"];
   senior?: string[] | null;
+  visited_nodes?: string[]; // workflow node ids the run has executed at least once
   error?: string;
 }
 
@@ -226,6 +227,7 @@ Choose: ${w.options.join(", ")}` });
     waiting: w ? { kind: w.kind, question: w.question, options: w.options, taskId: w.taskId } : null,
     engine_status: s.status,
     senior: s.senior ?? null,
+    visited_nodes: Object.keys(s.visits).filter((k) => s.visits[k] > 0),
     error: s.error,
   };
 }
