@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { compilerToGraph, graphToCompiler, type Graph } from './workflowApi';
+import { canvasToCompiler, compilerToCanvas } from './workflowFormat';
 
 describe('graphToCompiler', () => {
   it('adds a start node with an edge to the graph start', () => {
@@ -126,5 +127,55 @@ describe('compilerToGraph', () => {
 
     expect(compilerToGraph(workflow, base).start).toBe('base');
     expect(compilerToGraph(workflow).start).toBe('a');
+  });
+
+  it('keeps Smurf node types and params through the classic canvas round-trip', () => {
+    const graph: Graph = {
+      name: 'Linear Smurf',
+      start: 'plan',
+      nodes: [
+        { id: 'plan', type: 'senior.plan', params: { maxTasks: 3 } },
+        { id: 'gate', type: 'human.approval', params: { timeoutMin: 5 } },
+        { id: 'check', type: 'verify.evidence' },
+      ],
+      edges: [
+        { from: 'plan', to: 'gate' },
+        { from: 'gate', to: 'check' },
+      ],
+    };
+
+    const compiler = graphToCompiler('linear-smurf', graph);
+    const canvas = compilerToCanvas(compiler);
+    const saved = canvasToCompiler(canvas);
+    const result = compilerToGraph(saved, graph);
+
+    expect(result.nodes.map((node) => node.id)).toEqual(['plan', 'gate', 'check']);
+    expect(result.nodes.map((node) => node.type)).toEqual([
+      'senior.plan',
+      'human.approval',
+      'verify.evidence',
+    ]);
+    expect(result.nodes.map((node) => node.params)).toEqual([
+      { maxTasks: 3 },
+      { timeoutMin: 5 },
+      undefined,
+    ]);
+    expect(result.start).toBe('plan');
+    expect(result.nodes.some((node) => node.id === 'end')).toBe(false);
+    expect(
+      result.edges.some((edge) => edge.from === 'end' || edge.to === 'end'),
+    ).toBe(false);
+  });
+
+  it('throws when a node has no agent and no base node type', () => {
+    const workflow = {
+      id: 'broken',
+      name: 'Broken',
+      version: 1,
+      nodes: [{ id: 'gate', type: 'human_gate', data: { label: 'Approve' } }],
+      edges: [],
+    };
+
+    expect(() => compilerToGraph(workflow)).toThrow('Node gate has no Smurf node type');
   });
 });
