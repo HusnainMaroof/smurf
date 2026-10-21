@@ -5,7 +5,7 @@ import { WorkflowOrchestration } from './WorkflowOrchestration';
 import AiToolsManager from './AiToolsManager';
 import { SkillsRegistry } from './SkillsRegistry';
 import { McpServerHub } from './McpServerHub';
-import { ModelsManager } from './ModelsManager';
+import { SmurfModelsPanel } from './SmurfModelsPanel';
 import { ThemeManager } from './ThemeManager';
 import { useLanguage } from './LanguageContext';
 import type { Language } from './LanguageContext';
@@ -361,14 +361,7 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
             ) : currentView === 'mcp' ? (
               <McpServerHub />
             ) : currentView === 'models' ? (
-              <ModelsManager 
-                selectedModel={selectedModel}
-                setSelectedModel={setSelectedModel}
-                activeModelId={activeModelId}
-                setActiveModelId={setActiveModelId}
-                configuredModels={configuredModels}
-                setConfiguredModels={setConfiguredModels}
-              />
+              <SmurfModelsPanel />
             ) : currentView === 'appearance' ? (
               <ThemeManager 
                 currentThemeId={themeId}
