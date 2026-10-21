@@ -8,6 +8,7 @@ import { runBenchmarks } from "../bench.ts";
 import { Engine, validate } from "../engine.ts";
 import { NODE_TYPES } from "../nodes/index.ts";
 import { CATEGORIES, type Category, type Mode, type RunState, type Workflow } from "../types.ts";
+import { stripAnsi } from "../adapters/common.ts";
 import { git, ROOT, readJson, writeJson } from "../util.ts";
 import { parseDiff, project, type UiState } from "./projection.ts";
 
@@ -96,6 +97,27 @@ export class Runner {
       } catch {
         return null;
       }
+    },
+    runAgents: ({ id }: Params) => {
+      try {
+        return { agents: runAgents(this.engine.vault.loadState(String(id)), path.join(this.engine.vault.runDir(String(id)), "logs")) };
+      } catch {
+        return { agents: [] };
+      }
+    },
+    log: ({ id, name, offset }: Params) => {
+      if (!/^[\w.-]+$/.test(String(name))) throw new Error("bad log name");
+      const file = path.join(this.engine.vault.runDir(String(id)), "logs", `${name}.log`);
+      if (!fs.existsSync(file)) return { text: "", offset: 0, size: 0 };
+      const size = fs.statSync(file).size;
+      // a terminal that polls: send what is new since `offset`, at most the last 64 KB
+      let from = Math.max(0, Math.min(Number(offset) || 0, size));
+      if (size - from > 65_536) from = size - 65_536;
+      const fd = fs.openSync(file, "r");
+      const buf = Buffer.alloc(size - from);
+      fs.readSync(fd, buf, 0, buf.length, from);
+      fs.closeSync(fd);
+      return { text: stripAnsi(buf.toString("utf8")), offset: size, size, skipped: from > (Number(offset) || 0) ? from - (Number(offset) || 0) : 0 };
     },
     runs: () =>
       this.engine.vault.runs().map((s) => ({ run_id: s.id, title: s.request.slice(0, 80), status: s.status, workspace_id: s.project.name, workflow: s.workflow, created_at: s.createdAt, updated_at: s.updatedAt, tasks: s.tasks.length, accepted: s.tasks.filter((t) => t.status === "accepted").length })),
@@ -238,4 +260,61 @@ export class Runner {
       delay = Math.min(delay * 2, 30_000);
     }
   }
+}
+
+export interface RunAgent {
+  id: string; // log name: GET /api/runs/:id/logs/:id
+  kind: "senior" | "worker" | "review";
+  node: string; // workflow node type the agent belongs to (the canvas links it there)
+  task?: string;
+  title: string;
+  model: string;
+  attempt?: number;
+  status: string;
+  startedAt: string;
+  live: boolean; // its log grew in the last 15 s while the run is running
+}
+
+const SENIOR_NODE: Record<string, string> = { understand: "senior.understand", plan: "senior.plan", confirm: "senior.decide" };
+
+/** Every agent the run launched (senior calls, worker attempts, reviews), oldest first, from the state and the log files. */
+export function runAgents(s: RunState, logDir: string): RunAgent[] {
+  const logs = fs.existsSync(logDir) ? fs.readdirSync(logDir).filter((f) => f.endsWith(".log")).map((f) => f.slice(0, -4)) : [];
+  const mtime = (name: string) => {
+    try {
+      return fs.statSync(path.join(logDir, `${name}.log`)).mtimeMs;
+    } catch {
+      return 0;
+    }
+  };
+  const live = (name: string) => s.status === "running" && Date.now() - mtime(name) < 15_000;
+  const has = new Set(logs);
+  const out: RunAgent[] = [];
+  for (const name of logs) {
+    const m = name.match(/^senior-(\w+)-(\d+)$/);
+    if (!m) continue;
+    const head = fs.readFileSync(path.join(logDir, `${name}.log`), "utf8").slice(0, 600);
+    const model = head.match(/(?:-m|--model)\s+'?([^\s']+)/)?.[1] ?? "senior";
+    out.push({ id: name, kind: "senior", node: SENIOR_NODE[m[1]] ?? "senior.plan", title: `Senior: ${m[1]}`, model, status: live(name) ? "running" : "done", startedAt: new Date(Number(m[2])).toISOString(), live: live(name) });
+  }
+  for (const t of s.tasks) {
+    for (const a of t.attempts) {
+      const worker = `${t.id}-a${a.n}`;
+      const last = a === t.attempts[t.attempts.length - 1];
+      const running = last && !a.decision && !a.failure && s.status === "running" && t.status === "running";
+      if (has.has(worker))
+        out.push({
+          id: worker, kind: "worker", node: "agent.delegate", task: t.id, title: `${t.id} #${a.n}: ${t.title}`, model: a.model, attempt: a.n,
+          status: a.failure ? `failed (${a.failure})` : last && t.status === "accepted" && a.decision !== "accept" ? "accept (owner)" : a.decision ?? (running ? (a.evidence ? "checked" : "running") : "done"),
+          startedAt: a.startedAt, live: live(worker),
+        });
+      const review = `${worker}-review`;
+      if (has.has(review))
+        out.push({
+          id: review, kind: "review", node: "agent.review", task: t.id, title: `Review ${t.id} #${a.n}`, model: a.review?.model ?? "reviewer", attempt: a.n,
+          status: a.review ? `score ${a.review.score}` : running ? "running" : "no review", startedAt: new Date(mtime(review) || Date.parse(a.startedAt)).toISOString(), live: live(review),
+        });
+    }
+  }
+  return out.sort((x, y) => x.startedAt.localeCompare(y.startedAt));
 }

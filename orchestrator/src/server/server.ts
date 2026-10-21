@@ -349,6 +349,8 @@ export class SmurfServer {
       return { run_id };
     }
     if ((m = M("GET", /^\/api\/runs\/([\w.-]+)\/state$/))) return this.stateOf(m[1]);
+    if ((m = M("GET", /^\/api\/runs\/([\w.-]+)\/agents$/))) return this.call("runAgents", { id: m[1] });
+    if ((m = M("GET", /^\/api\/runs\/([\w.-]+)\/logs\/([\w.-]+)$/))) return this.call("log", { id: m[1], name: m[2], offset: Number(q("offset") || 0) });
     if ((m = M("DELETE", /^\/api\/runs\/([\w.-]+)$/))) {
       delete this.sessions[m[1]];
       this.states.delete(m[1]);

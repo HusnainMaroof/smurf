@@ -119,6 +119,16 @@ assert.equal(hist[0].run_id, run_id);
 assert.equal((await api("GET", `/api/runs/${run_id}/state`)).body.status, "passed");
 assert.match(git(repo, "show", `orch/${run_id}:math.js`).out, /a \+ b/);
 
+// agents the run launched, linked to workflow nodes, each with a readable terminal log
+const agents = (await api("GET", `/api/runs/${run_id}/agents`)).body.agents;
+const worker = agents.find((a: any) => a.kind === "worker" && a.status === "accept");
+assert.ok(worker && worker.node === "agent.delegate" && worker.model === "mock:coder", JSON.stringify(agents));
+assert.ok(agents.some((a: any) => a.kind === "senior" && a.node === "senior.plan"), "senior calls are agents too");
+const log = (await api("GET", `/api/runs/${run_id}/logs/${worker.id}`)).body;
+assert.ok(log.size > 0 && log.text.includes("mock coder"), JSON.stringify(log));
+assert.equal((await api("GET", `/api/runs/${run_id}/logs/${worker.id}?offset=${log.offset}`)).body.text, "", "polling from the end returns nothing new");
+assert.equal((await api("GET", `/api/runs/${run_id}/logs/..%2F..%2Fstate`)).code, 404, "no path escape");
+
 sock.close();
 server.close();
 console.log(`smurf e2e PASS (run ${run_id})`);

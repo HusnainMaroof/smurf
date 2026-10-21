@@ -47,6 +47,8 @@ CLI logins. Everything the app talks to lives in the container; the runner only 
 | GET `/api/runs/history` | `?workspace_id` | `{sessions:[{run_id, title, status, workspace_id, created_at, updated_at}]}` |
 | POST `/api/sessions` | `{workspace_id, title?}` | `{run_id}` (empty session; the first chat message starts the run) |
 | GET `/api/runs/:id/state` | | `ClutchState` |
+| GET `/api/runs/:id/agents` | | `{agents:[{id, kind: senior/worker/review, node (workflow node type it belongs to), task?, title, model, attempt?, status, startedAt, live}]}` oldest first |
+| GET `/api/runs/:id/logs/:agentId` | `?offset` | `{text, offset, size, skipped}`: the agent's terminal output since `offset` (ANSI stripped, at most 64 KB; poll with the returned `offset`) |
 | DELETE `/api/runs/:id` | | `{status:"deleted"}` |
 | GET `/api/seniors` | | senior choices: `{default: string[], options:[{key, tier, billing, cooling}]}` (strong/premium models) |
 | PUT `/api/sessions/:id/senior` | `{senior: string or string[]}` | `{senior}`; set before the first message (409 after the run starts) |
