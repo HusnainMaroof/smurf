@@ -1,0 +1,32 @@
+[
+  {
+    "id": "explain-eq",
+    "title": "Explain how test.js decides pass or fail",
+    "category": "research",
+    "risk": "low",
+    "timeoutMin": 15,
+    "files": [],
+    "checks": [],
+    "brief": "Plain Node.js project (CommonJS, no test framework). Read test.js and math.js only; change nothing. Answer: (1) how the helper `eq(a, b, m)` in test.js decides pass or fail (which comparison, what it prints, which exit code); (2) what `node test.js` prints and returns when every check passes; (3) what happens on the first failing check: does it run the later checks or stop? Cite file:line for each answer. End with one concrete recommendation to make failures easier to read, phrased so a coding agent could do it. Give the whole report as your final answer."
+  },
+  {
+    "id": "review-math",
+    "title": "Review math.js for edge-case bugs",
+    "category": "review",
+    "risk": "low",
+    "timeoutMin": 15,
+    "files": [],
+    "checks": [],
+    "brief": "Plain Node.js project (CommonJS). Review math.js (exports add, mul, sub; each is `(a, b) => ...`) for correctness with non-number input. Read math.js and test.js only; change nothing, run nothing. For each export say what `add('2', 3)`, `add(undefined, 1)` and `sub(null, 1)` return in JavaScript and whether that is a bug for a math helper. List findings one per line as file:line, severity (low/medium/high), problem. End with the single most useful fix. Give the whole report as your final answer."
+  },
+  {
+    "id": "add-div",
+    "title": "Add div(a, b) with a divide-by-zero error",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["math.js", "test.js"],
+    "checks": [{ "name": "tests", "cmd": "node test.js" }],
+    "brief": "Plain Node.js project (CommonJS, no test framework). Read math.js and test.js first.\n1. In math.js add `exports.div = (a, b) => { ... }` in the same one-line arrow style as the others: return a / b, but throw `new Error('division by zero')` when b === 0.\n2. In test.js import div in the existing require line, add `eq(div(6, 3), 2, 'div');` next to the other eq calls, and add a check that div(1, 0) throws: wrap it in try/catch and call `eq(threw, true, 'div by zero')` where threw is true only when the error message is 'division by zero'.\nDone when `node test.js` prints ok. Do not change add, mul, sub or the eq helper; do not add files."
+  }
+]
