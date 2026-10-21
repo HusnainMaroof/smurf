@@ -1,0 +1,28 @@
+[
+  {
+    "id": "new-workflow",
+    "title": "Workflows: 'New workflow' starts from a copy of the default Smurf graph",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 25,
+    "files": ["desktop/src/components/WorkflowOrchestration.tsx"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "Desktop app (folder desktop/). In desktop/src/components/WorkflowOrchestration.tsx the create-workflow handler (the one that builds `const empty: CompilerWorkflow = { id: slug, name: newWorkflowName.trim(), ..., nodes: [{ id: 'end', type: 'end', ... }], edges: [{ source: 'start', target: 'end' }] }` and calls saveUserWorkflow(empty)) produces a graph the Smurf server rejects: Smurf graphs have no 'end' node and need real node types (e.g. 'senior.plan').\nChange only that handler: instead of the empty workflow, load the built-in graph with `await loadUserWorkflow('default')` (already imported from ../services/workflowApi; add the import if missing) and save `{ ...base, id: slug, name: newWorkflowName.trim(), description: newWorkflowDesc.trim(), icon: 'workflow' }`. Keep the existing validateWorkflow call, the error handling, refreshList and select-after-create behaviour exactly as they are. If loading 'default' throws, show the error the same way the handler already shows save errors. Smallest possible change; touch nothing else in the file."
+  },
+  {
+    "id": "graph-edit-polish",
+    "title": "Workflows graph editor: deselect on empty canvas click, Reset goes back to the last save",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 25,
+    "files": ["desktop/src/components/SmurfGraphView.tsx", "desktop/src/components/SmurfGraphView.test.tsx"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "Desktop app (folder desktop/). desktop/src/components/SmurfGraphView.tsx is an @xyflow/react graph editor for a `workflow: CompilerWorkflow` prop with an optional `onSave`. It keeps local edit maps (positions, names, params), a selectedId, and Save/Reset buttons. Two fixes, only in editable mode (onSave given); read-only mode must not change:\n1. Clicking the empty canvas deselects: pass `onPaneClick={() => setSelectedId(null)}` to ReactFlow when editable, so the side panel closes.\n2. After a successful save, the saved workflow becomes the new baseline. Add state `const [saved, setSaved] = useState<CompilerWorkflow | null>(null)` and use `const current = saved ?? workflow` everywhere the component currently reads `workflow` to build nodes/edges, the selected node, and the updated workflow in handleSave. On successful onSave(updated): setSaved(updated) and clear positions/names/params maps (keep the 'Saved' status). Reset clears the edit maps but keeps `saved`, so it returns to the last saved state. The existing effect that resets everything when the `workflow` prop changes must also setSaved(null). Keep the `layoutOrder` export and its tests unchanged."
+  }
+]
