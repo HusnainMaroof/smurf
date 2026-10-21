@@ -32,6 +32,7 @@
     },
     "prior": 0.5,
     "priorWeight": 2,
+    "exploreLowRisk": 0.15,
     "premium": "escalation",
     "latencyTargetSec": {
       "coding": 600,

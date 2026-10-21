@@ -90,11 +90,15 @@ export class Router {
       let score = Object.entries(parts).reduce((a, [k, v]) => a + (w[k as keyof typeof w] ?? 0) * v, 0) / wsum;
       score += 0.005 * tierIndex(m.tier); // tie-break toward the stronger model
       const nCat = cat(work).length;
+      // without this, untested models sit at the prior forever and one proven model takes every task;
+      // low-risk tasks are cheap to retry, so they try the less-known models
+      const explore = req.risk === "low" && !req.escalated ? (rc.exploreLowRisk ?? 0) / (1 + nCat) : 0;
+      score += explore;
       out.push({
         key: m.key,
         score: +score.toFixed(4),
         parts,
-        why: `bench ${cat(benchRows).filter((e) => e.success).length}/${cat(benchRows).length} ${req.category}, ${benchRows.filter((e) => e.success).length}/${benchRows.length} all; ${nCat} ${req.category} / ${work.length} real runs; tier ${m.tier}, ${billing}${lat !== undefined ? `, ~${Math.round(lat)}s` : ""}`,
+        why: `bench ${cat(benchRows).filter((e) => e.success).length}/${cat(benchRows).length} ${req.category}, ${benchRows.filter((e) => e.success).length}/${benchRows.length} all; ${nCat} ${req.category} / ${work.length} real runs; tier ${m.tier}, ${billing}${lat !== undefined ? `, ~${Math.round(lat)}s` : ""}${explore ? `, explore +${explore.toFixed(3)}` : ""}`,
       });
     }
     out.sort((a, b) => b.score - a.score);

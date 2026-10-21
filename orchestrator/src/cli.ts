@@ -135,6 +135,10 @@ async function main() {
         reassigns: 0,
         ...(r.timeoutMin ? { timeoutMin: Number(r.timeoutMin) } : {}),
       }));
+      const ids = new Set(tasks.map((t) => t.id));
+      if (ids.size !== tasks.length) throw new Error(`${file}: task ids must be unique`);
+      const bad = tasks.flatMap((t) => t.deps.filter((d: string) => !ids.has(d) || d === t.id).map((d: string) => `${t.id} -> ${d}`));
+      if (bad.length) throw new Error(`${file}: deps must name other tasks in the file: ${bad.join(", ")}`);
       printEvents(engine);
       const request = words.join(" ") || `Preset tasks: ${tasks.map((t) => t.id).join(", ")}`;
       summary(await engine.startWith({ project: engine.vault.project(project), request, workflow: flag("--workflow") || "tasks", tasks }));

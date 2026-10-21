@@ -36,7 +36,16 @@ export function pickReady(s: RunState, free: (t: Task) => boolean, log: (msg: st
       }
     }
   }
-  return s.tasks.find((t) => t.status === "pending" && t.deps.every((d) => s.tasks.find((x) => x.id === d)?.status === "accepted") && free(t));
+  const next = s.tasks.find((t) => t.status === "pending" && t.deps.every((d) => s.tasks.find((x) => x.id === d)?.status === "accepted") && free(t));
+  if (!next && !s.tasks.some((t) => t.status === "running")) {
+    // nothing runs and nothing is ready: the pending tasks depend on a task that failed or was
+    // skipped, or on each other (a cycle), so they can never start; skip them instead of hanging
+    for (const t of s.tasks.filter((x) => x.status === "pending")) {
+      t.status = "skipped";
+      log(`skip ${t.id}: its dependencies ${t.deps.join(", ")} can never be accepted (failed, skipped or circular)`);
+    }
+  }
+  return next;
 }
 
 /** True when two tasks may touch the same file (folders end with "/"). */

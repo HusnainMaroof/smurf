@@ -34,6 +34,8 @@ export interface Config {
     weights: Record<"benchmark" | "correctness" | "tools" | "context" | "latency" | "cost", number>;
     prior: number;
     priorWeight: number;
+    /** Score bonus for models with few runs in the category, on low-risk tasks only (shrinks as 1/(1+runs)); 0 = off. */
+    exploreLowRisk?: number;
     premium: "never" | "escalation" | "always";
     latencyTargetSec: Record<Category, number>;
     modelsTtlHours: number;
