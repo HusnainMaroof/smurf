@@ -1,9 +1,7 @@
 .env
-references/
 node_modules/
 dist/
 *.log
 .claude/worktrees/
 .claude/settings.local.json
-desktop/
 .claude/scheduled_tasks.lock

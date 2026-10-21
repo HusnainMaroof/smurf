@@ -1,6 +1,6 @@
 # TODO (next session)
 
-State on 2026-10-21: the desktop/web app is removed; the work is the orchestrator in `orchestrator/`.
+State on 2026-10-21: only the orchestrator (`orchestrator/`) is left; the app and its folders are deleted.
 Start by loading the `orch-ship` skill (and `orchestrator`, `orch-fix` as needed). Commands below run
 in `orchestrator/`; add `ORCH_CONFIG=config/free-only.json` for runs.
 
@@ -19,8 +19,7 @@ the report-as-final-answer fix works on real models (one rate-limit reassign, no
 - [ ] Run `2026-10-21-smurf-ui-batch-9-agent-terminals` shows "running" but was stopped when the
       app was removed. There is no `orch abort` command yet (Engine.abort exists): add one, then
       abort this run. Its branches and worktrees are already deleted.
-- [ ] Delete leftovers by hand (my delete was blocked): `cmd /c "rmdir /s /q desktop"`,
-      `del .env`, `rmdir /s /q references` in the repo root.
+- [ ] `.env` in the repo root still holds the old server token; delete it (nothing uses it).
 
 ## 3. Next improvements (ideas, in order of value)
 
