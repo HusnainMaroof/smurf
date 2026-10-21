@@ -1,0 +1,15 @@
+[
+  {
+    "id": "senior-picker",
+    "title": "Chat: choose the senior model when starting a session",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 35,
+    "files": ["desktop/src/components/SeniorPicker.tsx", "desktop/src/components/SeniorPicker.test.tsx", "desktop/src/services/smurfApi.ts", "desktop/src/components/ChatFeed.tsx"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "Desktop app (React 19 + TypeScript + Tailwind, folder desktop/). Each chat session runs with a 'senior' model that understands the request and plans the work. The user must pick it when starting a session.\n\nBackend endpoints (smurf-server):\n- GET /api/seniors -> { default: string[], options: { key: string; tier: 'strong' | 'premium'; billing: 'free' | 'subscription' | 'metered'; cooling: boolean }[] }\n- PUT /api/sessions/<run_id>/senior with JSON body { senior: string } -> { senior: string[] | null }; returns 409 once the run has started.\n\n1. In desktop/src/services/smurfApi.ts (existing file; keep everything already there) add: `export type SeniorOption = {...}` matching the shape above, `fetchSeniors(): Promise<{ default: string[]; options: SeniorOption[] }>` using the existing serverJson helper with fallback { default: [], options: [] }, and `setSessionSenior(runId: string, key: string): Promise<boolean>` using `serverFetch` from './serverUrl' with method PUT, header Content-Type application/json, returning response.ok. Also export a pure helper `sortSeniors(options: SeniorOption[]): SeniorOption[]` that puts non-cooling before cooling, then free before subscription before metered, then premium before strong, then by key.\n2. Create desktop/src/components/SeniorPicker.tsx exporting `SeniorPicker` (no required props). It reads the live run state with `useClutchState()` from '../services/clutchState' (fields: run_id, status, messages). Render only while the session has not started: status === 'idle' and messages.length === 0. It shows a compact row: label 'Senior model', a <select> listing sortSeniors(options) as '<key> - <billing>' (append ' (cooling)' when cooling), plus a first option 'Default (<default joined with \", \">)'. On change call setSessionSenior(state.run_id, key) (skip for the Default option) and show a small 'saved' or 'could not save' text. Load options once on mount. Use the app's existing Tailwind style (small text, rounded border, light background).\n3. Create desktop/src/components/SeniorPicker.test.tsx (vitest) testing only sortSeniors (ordering rules above).\n4. In desktop/src/components/ChatFeed.tsx render `<SeniorPicker />` once, directly above the existing `<GateOptionsBar />` (one import line + one JSX line). Do not change anything else."
+  }
+]

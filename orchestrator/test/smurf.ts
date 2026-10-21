@@ -34,7 +34,7 @@ const providers = Object.fromEntries(Object.keys(base.providers).map((k) => [k, 
 const cfg = loadConfig({
   vault: path.join(tmp, "vault"),
   worktreeRoot: path.join(tmp, "wt"),
-  senior: { model: "mock:senior", fallback: [], timeoutMin: 1 },
+  senior: { model: "mock:not-a-model", fallback: [], timeoutMin: 1 }, // only the session's pick can work
   router: { ...base.router, premium: "never" },
   providers: providers as any,
 });
@@ -69,7 +69,11 @@ assert.ok((await api("GET", "/api/nodes")).body.some((n: any) => n.type === "sen
 assert.ok((await api("GET", "/api/workflows/user")).body.workflows.some((w: any) => w.id === "default"));
 assert.ok((await api("GET", "/api/models")).body.models.some((m: any) => m.key === "mock:coder"));
 
+const seniors = (await api("GET", "/api/seniors")).body;
+assert.deepEqual(seniors.default, ["mock:not-a-model"]);
+assert.ok(seniors.options.some((o: any) => o.key === "mock:senior"), JSON.stringify(seniors));
 const { run_id } = (await api("POST", "/api/sessions", { workspace_id: "demo" })).body;
+assert.deepEqual((await api("PUT", `/api/sessions/${run_id}/senior`, { senior: "mock:senior" })).body.senior, ["mock:senior"]);
 const states: any[] = [];
 const events: string[] = [];
 const sock = new WebSocket(`ws://127.0.0.1:${port}/ws/runs/${run_id}?token=${token}`);
@@ -101,6 +105,7 @@ assert.ok(events.includes("human_required"));
 sock.send(JSON.stringify({ action: "human_decision", decision: "approve" }));
 const done = await waitFor((s) => s.status === "passed" || s.status === "failed");
 assert.equal(done.status, "passed", done.error);
+assert.deepEqual(done.senior, ["mock:senior"], "the session's senior ran the run");
 const attempt = done.messages.find((m: any) => m.verificationReport);
 assert.equal(attempt.verificationReport.conclusion, "passed");
 assert.deepEqual(attempt.filesChanged, ["math.js"]);

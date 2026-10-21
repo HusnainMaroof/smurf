@@ -70,10 +70,19 @@ export class Runner {
       });
       return { id: n, name: n, workspace_path: repo.replace(/\\/g, "/") };
     },
-    start: ({ id, project: name, request, workflow }: Params) => {
+    seniors: async () => {
+      const { models } = await this.engine.models.list();
+      const def = [this.engine.cfg.senior.model, ...this.engine.cfg.senior.fallback];
+      // planning needs a capable model: strong and premium tiers, read-only mode
+      const options = models
+        .filter((m) => (m.tier === "strong" || m.tier === "premium") && m.modes.includes("readonly"))
+        .map((m) => ({ key: m.key, tier: m.tier, billing: this.engine.models.billing(m.key), cooling: !!this.engine.models.coolingDown(m.key) }));
+      return { default: def, options };
+    },
+    start: ({ id, project: name, request, workflow, senior }: Params) => {
       const proj = this.engine.vault.project(String(name));
       // runs take minutes to hours: answer now, stream progress as events
-      this.engine.startWith({ project: proj, request: String(request), workflow: String(workflow || "default"), id: String(id) }).catch((e) => this.failed(String(id), e));
+      this.engine.startWith({ project: proj, request: String(request), workflow: String(workflow || "default"), id: String(id), senior: Array.isArray(senior) ? senior.map(String) : senior ? [String(senior)] : undefined }).catch((e) => this.failed(String(id), e));
       return { status: "started" };
     },
     resume: ({ id, choice, note }: Params) => {

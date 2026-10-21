@@ -158,6 +158,7 @@ export interface RunState {
   integrationWorktree?: string;
   costUsd: number; // billed (metered APIs), counts against the budget
   usageUsd?: number; // equivalent cost of subscription CLIs, informational
+  senior?: string[]; // senior model keys chosen for this run (first wins); default: config senior + fallback
   createdAt: string;
   updatedAt: string;
   error?: string;

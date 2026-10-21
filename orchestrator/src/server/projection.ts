@@ -49,6 +49,7 @@ export interface UiState {
   /* Smurf extras: the gate the owner must answer, and the raw engine status */
   waiting?: { kind: string; question: string; options: string[]; taskId?: string } | null;
   engine_status?: RunState["status"];
+  senior?: string[] | null;
   error?: string;
 }
 
@@ -221,6 +222,7 @@ export function project(s: RunState, vaultRunDir: string, logs: string[] = []): 
     session_tokens: attempts.reduce((x, a) => x + a.tokensIn + a.tokensOut, 0),
     waiting: w ? { kind: w.kind, question: w.question, options: w.options, taskId: w.taskId } : null,
     engine_status: s.status,
+    senior: s.senior ?? null,
     error: s.error,
   };
 }

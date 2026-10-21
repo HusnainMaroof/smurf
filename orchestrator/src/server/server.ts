@@ -22,6 +22,7 @@ interface Session {
   title: string;
   created_at: string;
   started: boolean;
+  senior?: string[];
 }
 
 const json = (res: http.ServerResponse, code: number, body: unknown) => {
@@ -56,6 +57,12 @@ class HttpError extends Error {
     super(msg);
     this.code = code;
   }
+}
+
+/** A model key or list of keys from a request; undefined when empty. */
+function toList(v: unknown): string[] | undefined {
+  const l = (Array.isArray(v) ? v : v ? [v] : []).map((x) => String(x).trim()).filter(Boolean);
+  return l.length ? l : undefined;
 }
 
 export function newRunId() {
@@ -232,7 +239,7 @@ export class SmurfServer {
   private async onClient(run: string, ws: Socket, msg: any) {
     const fail = (e: unknown) => ws.send({ event: "log", data: { run_id: run, message: `error: ${(e as Error).message || e}` } });
     try {
-      if (msg && typeof msg.text === "string" && !msg.action) return await this.chat(run, msg.text.trim(), msg.workflow_id);
+      if (msg && typeof msg.text === "string" && !msg.action) return await this.chat(run, msg.text.trim(), msg.workflow_id, msg.senior ?? msg.model_id);
       if (msg?.action === "human_decision") return await this.decide(run, String(msg.decision || ""), msg.instructions ?? msg.note);
       if (msg?.action === "stop_run") return void (await this.call("abort", { id: run }));
     } catch (e) {
@@ -241,19 +248,20 @@ export class SmurfServer {
   }
 
   /** First message starts the run; later ones answer the senior's questions. */
-  private async chat(run: string, text: string, workflow?: string) {
+  private async chat(run: string, text: string, workflow?: string, seniorPick?: string | string[]) {
     if (!text) return;
     const s = this.sessions[run];
     const st = await this.stateOf(run);
     if (!s?.started && st.status === "idle") {
       const workspace = s?.workspace_id || this.active;
       if (!workspace) throw new Error("choose a workspace (project) first");
-      this.sessions[run] = { run_id: run, workspace_id: workspace, title: text.slice(0, 80), created_at: s?.created_at ?? new Date().toISOString(), started: true };
+      const senior = toList(seniorPick) ?? s?.senior;
+      this.sessions[run] = { run_id: run, workspace_id: workspace, title: text.slice(0, 80), created_at: s?.created_at ?? new Date().toISOString(), started: true, senior };
       this.save("sessions.json", this.sessions);
       const pending = { ...emptyState(run), status: "running" as const, current_instruction: text, messages: [{ id: "request", agent: "User", avatar: "", time: "", text }] };
       this.states.set(run, pending);
       this.toRun(run, { event: "state_patch", data: { run_id: run, timestamp: new Date().toISOString(), patch: pending } });
-      await this.call("start", { id: run, project: workspace, request: text, workflow: workflow || "default" });
+      await this.call("start", { id: run, project: workspace, request: text, workflow: workflow || "default", senior });
       return;
     }
     if (st.waiting?.kind === "question") return void (await this.call("resume", { id: run, choice: "answer", note: text }));
@@ -336,7 +344,7 @@ export class SmurfServer {
     }
     if (M("POST", /^\/api\/sessions$/)) {
       const run_id = newRunId();
-      this.sessions[run_id] = { run_id, workspace_id: body.workspace_id || this.active || "", title: body.title || "", created_at: new Date().toISOString(), started: false };
+      this.sessions[run_id] = { run_id, workspace_id: body.workspace_id || this.active || "", title: body.title || "", created_at: new Date().toISOString(), started: false, senior: toList(body.senior) };
       this.save("sessions.json", this.sessions);
       return { run_id };
     }
@@ -352,6 +360,15 @@ export class SmurfServer {
     if ((m = M("GET", /^\/api\/workflows\/user\/([\w.-]+)$/))) return { graph: await this.call("workflow", { id: m[1] }) };
     if ((m = M("PUT", /^\/api\/workflows\/user\/([\w.-]+)$/))) return this.call("saveWorkflow", { id: m[1], graph: body.graph });
     if (M("GET", /^\/api\/nodes$/)) return this.call("nodes");
+    if (M("GET", /^\/api\/seniors$/)) return this.call("seniors", {}, 600_000);
+    if ((m = M("PUT", /^\/api\/sessions\/([\w.-]+)\/senior$/))) {
+      const s = this.sessions[m[1]];
+      if (!s) throw new HttpError(404, `no session ${m[1]}`);
+      if (s.started) throw new HttpError(409, "the run has started; the senior is fixed for this session");
+      s.senior = toList(body.senior);
+      this.save("sessions.json", this.sessions);
+      return { senior: s.senior ?? null };
+    }
     if (M("GET", /^\/api\/models$/)) return this.call("models", { refresh: q("refresh") === "1" }, 600_000);
     if (M("GET", /^\/api\/route$/)) return this.call("route", { category: q("category"), mode: q("mode") }, 600_000);
     if (M("GET", /^\/api\/agents$/)) return this.call("agents");

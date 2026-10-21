@@ -58,7 +58,7 @@ export class Engine extends EventEmitter {
   }
 
   /** Starts a run with an explicit project and optionally preset tasks (benchmarks, imported plans). */
-  async startWith(o: { project: Project; request: string; workflow: string; tasks?: Task[]; id?: string }): Promise<RunState> {
+  async startWith(o: { project: Project; request: string; workflow: string; tasks?: Task[]; id?: string; senior?: string[] }): Promise<RunState> {
     const { project, request } = o;
     const workflowName = o.workflow;
     const projectName = project.name;
@@ -73,6 +73,7 @@ export class Engine extends EventEmitter {
       cursor: wf.start,
       visits: {},
       tasks: o.tasks ?? [],
+      ...(o.senior?.length ? { senior: o.senior } : {}),
       integrationBranch: `orch/${id}`,
       costUsd: 0,
       createdAt: now(),
@@ -240,7 +241,8 @@ export class Engine extends EventEmitter {
 
   /** Asks the senior model (with fallbacks) for a JSON answer. Read-only, in the project repo. */
   async senior<T>(s: RunState, kind: string, prompt: string): Promise<{ data: T; key: string; text: string }> {
-    const keys = [this.cfg.senior.model, ...this.cfg.senior.fallback];
+    // a session's own choice never falls back to the config default (that could be a paid model)
+    const keys = s.senior?.length ? s.senior : [this.cfg.senior.model, ...this.cfg.senior.fallback];
     let lastErr = "";
     for (const key of keys) {
       if (this.models.coolingDown(key)) continue;

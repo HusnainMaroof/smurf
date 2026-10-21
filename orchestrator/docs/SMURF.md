@@ -48,6 +48,8 @@ CLI logins. Everything the app talks to lives in the container; the runner only 
 | POST `/api/sessions` | `{workspace_id, title?}` | `{run_id}` (empty session; the first chat message starts the run) |
 | GET `/api/runs/:id/state` | | `ClutchState` |
 | DELETE `/api/runs/:id` | | `{status:"deleted"}` |
+| GET `/api/seniors` | | senior choices: `{default: string[], options:[{key, tier, billing, cooling}]}` (strong/premium models) |
+| PUT `/api/sessions/:id/senior` | `{senior: string or string[]}` | `{senior}`; set before the first message (409 after the run starts) |
 | GET `/api/workflows/user` | | `{workflows: WorkflowDef[]}` (our graphs, see mapping) |
 | GET `/api/workflows/user/:id` | | `{workflow: WorkflowDef, graph: Workflow}` |
 | PUT `/api/workflows/user/:id` | `{graph: Workflow}` | `{status:"saved", problems:[]}` (validated by engine) |
@@ -70,7 +72,7 @@ Client → server:
 
 | Payload | Meaning |
 |---|---|
-| `{text, agent_id?, model_id?}` | first message: start a run with this request; later: answer to a waiting question (note) |
+| `{text, senior?, workflow_id?}` | first message: start a run with this request; later: answer to a waiting question (note) |
 | `{action:"human_decision", decision, instructions?}` | answer a gate. `approve`/`reject` for the plan gate, `accept`/`retry`/`reassign`/`skip`/`abort` for escalations (the UI shows the run's `options`) |
 | `{action:"stop_run"}` | abort the run |
 
@@ -101,3 +103,10 @@ Runner → server: `{type:"hello", host, version}`, `{type:"event", event}` (eng
 Server → runner: `{type:"call", id, method, params}` with methods:
 `start`, `resume`, `abort`, `state`, `runs`, `projects`, `initProject`, `tree`, `file`, `changes`,
 `git`, `workflows`, `workflow`, `saveWorkflow`, `nodes`, `models`, `route`, `agents`, `benchmarks`, `bench`.
+
+## Senior model per session
+
+Each session picks its senior model(s) (understand, plan, confirm) when it starts: `PUT /api/sessions/:id/senior`
+or `senior` on the first chat message. A picked senior never falls back to the config default, so a free
+pick can't silently spend a paid subscription; if it fails the run fails and says so. No pick = config
+`senior.model` + `senior.fallback`.
