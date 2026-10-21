@@ -25,6 +25,8 @@ import {
 import { rightPanelSummaryTextClass, rightPanelUsesGridTabs } from '../platform/chrome/chatChrome';
 import { useHostOs } from '../platform/hostOs';
 import { formatStepMeter, formatTokenMeter, inputOutputPercents } from '../services/sessionUsage';
+import { useClutchState } from '../services/clutchState';
+import { stepStatus as resolveSmurfStepStatus, type StepStatus } from '../services/stepStatus';
 
 interface RightPanelProps {
   activeTab: RightTab;
@@ -79,6 +81,7 @@ type WorkflowStepView = {
   agent: string;
   agentType?: string;
   toolId?: string;
+  nodeType?: string;
 };
 
 const RIGHT_TAB_LABELS: Record<RightTab, string> = {
@@ -87,6 +90,19 @@ const RIGHT_TAB_LABELS: Record<RightTab, string> = {
   flow: 'Flow',
   changes: 'Changes',
   terminal: 'Terminal',
+};
+
+const SMURF_STEP_STATUS_BADGE: Record<Exclude<StepStatus, 'pending'>, string> = {
+  completed: WORKFLOW_STEP_STATUS_BADGE.completed,
+  running: WORKFLOW_STEP_STATUS_BADGE.in_progress,
+  waiting:
+    'inline-flex items-center text-[9px] font-bold uppercase whitespace-nowrap px-1.5 py-0.5 rounded border text-amber-800 bg-amber-50 border-amber-300',
+};
+
+const SMURF_STEP_STATUS_LABEL: Record<Exclude<StepStatus, 'pending'>, string> = {
+  completed: 'Completed',
+  running: 'In progress',
+  waiting: 'Waiting',
 };
 
 export const RightPanel: React.FC<RightPanelProps> = ({
@@ -126,6 +142,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const hostOs = useHostOs();
+  const { state: liveRunState } = useClutchState();
+  const smurfVisitedNodes = (liveRunState as { visited_nodes?: string[] }).visited_nodes;
+  const isSmurfRun = Array.isArray(smurfVisitedNodes);
   const summaryTextClass = rightPanelSummaryTextClass(hostOs);
   const useGridTabs = rightPanelUsesGridTabs(hostOs);
   const [selectedFile, setSelectedFile] = React.useState<string>('');
@@ -147,6 +166,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           agent: step.agentName,
           agentType: step.agentType,
           toolId: step.toolId,
+          nodeType: step.agentRef,
         })),
       );
       return;
@@ -172,6 +192,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                 agent: String(data.agent ?? '—'),
                 agentType: workflowToolLabel('clutch'),
                 toolId: 'clutch',
+                nodeType: String(data.agent ?? ''),
               };
             }),
         );
@@ -202,6 +223,18 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         className={WORKFLOW_STEP_STATUS_BADGE[status]}
       >
         {t(workflowStepStatusLabel(status))}
+      </span>
+    );
+  };
+
+  const renderSmurfStepStatusBadge = (status: StepStatus) => {
+    if (status === 'pending') return null;
+    return (
+      <span
+        data-testid={`workflow-step-status-${status}`}
+        className={SMURF_STEP_STATUS_BADGE[status]}
+      >
+        {t(SMURF_STEP_STATUS_LABEL[status])}
       </span>
     );
   };
@@ -341,7 +374,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({
       <ol className={compact ? 'space-y-1.5' : 'space-y-2'}>
         {workflowSteps.map((step, index) => {
           const isActive = step.id === activeNodeId;
-          const stepStatus = workflowStepStatuses.get(step.id) ?? 'pending';
+          const smurfStatus = isSmurfRun
+            ? resolveSmurfStepStatus(step.id, {
+                visited_nodes: smurfVisitedNodes,
+                active_node_id: liveRunState.active_node_id,
+                status: liveRunState.status,
+              })
+            : null;
           return (
             <li
               key={step.id}
@@ -371,11 +410,15 @@ export const RightPanel: React.FC<RightPanelProps> = ({
                       className="text-[10px] text-on-surface-variant/80 uppercase tracking-wide truncate"
                       data-testid={`step-engine-${step.id}`}
                     >
-                      {step.toolId || step.agentType || '—'}
+                      {isSmurfRun
+                        ? step.nodeType || step.agent || step.agentType || '—'
+                        : step.toolId || step.agentType || '—'}
                     </p>
                   </div>
                 </div>
-                {renderWorkflowStepStatusBadge(stepStatus)}
+                {smurfStatus
+                  ? renderSmurfStepStatusBadge(smurfStatus)
+                  : renderWorkflowStepStatusBadge(workflowStepStatuses.get(step.id) ?? 'pending')}
               </div>
             </li>
           );
