@@ -278,13 +278,13 @@ export class SmurfServer {
     const p = url.pathname;
     const q = (k: string) => url.searchParams.get(k) ?? undefined;
     if (req.method === "OPTIONS") {
-      res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE" });
+      res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE" });
       return res.end();
     }
     try {
       if (p === "/health") return json(res, 200, { status: "ok", api_version: "smurf-1", runner: { connected: !!this.runner, host: this.runner?.info.host, since: this.runner?.since } });
       if (!this.authorized(req, url)) return json(res, 401, { detail: "unauthorized" });
-      const body = req.method === "POST" || req.method === "PUT" ? await readBody(req) : {};
+      const body = req.method === "POST" || req.method === "PUT" || req.method === "PATCH" ? await readBody(req) : {};
       const r = await this.api(req.method || "GET", p, q, body);
       return json(res, 200, r);
     } catch (e) {
@@ -315,9 +315,11 @@ export class SmurfServer {
       return w;
     }
     if ((m = M("POST", /^\/api\/workspaces\/([\w.-]+)\/activate$/))) {
-      this.active = m[1];
+      const w = (await this.call<any[]>("projects")).find((x) => x.id === m![1]);
+      if (!w) throw new HttpError(404, `no workspace ${m[1]}`);
+      this.active = w.id;
       this.save("active.json", { id: this.active });
-      return { active_id: this.active };
+      return { ...w, active_id: this.active };
     }
     if (M("GET", /^\/api\/workspace\/tree$/)) return this.call("tree", { project: this.ws(q), path: q("path") ?? "" });
     if (M("GET", /^\/api\/workspace\/file$/)) return this.call("file", { project: this.ws(q), path: q("path") ?? "" });
@@ -357,6 +359,12 @@ export class SmurfServer {
     if (M("POST", /^\/api\/benchmarks$/)) return this.call("bench", body);
 
     if (M("GET", /^\/api\/preferences$/)) return this.prefs;
+    if ((m = M("GET", /^\/api\/preferences\/([\w-]+)$/))) {
+      const k = m[1].replace(/-/g, "_");
+      return { [k]: this.prefs[k] ?? null, value: this.prefs[k] ?? null };
+    }
+    // Clutch features Smurf does not have: empty, not 404, so the UI renders "none"
+    if (method === "GET" && /^\/api\/(skills|scheduled-tasks|shell-snapshots|repository-groups)$/.test(p)) return [];
     if ((m = M("POST", /^\/api\/preferences\/([\w-]+)$/))) {
       this.prefs[m[1].replace(/-/g, "_")] = body.value ?? body[m[1]] ?? true;
       this.save("preferences.json", this.prefs);
