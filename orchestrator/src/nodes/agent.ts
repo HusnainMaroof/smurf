@@ -151,7 +151,8 @@ export const agentNodes: NodeType[] = [
         tokensIn: res.tokensIn,
         tokensOut: res.tokensOut,
         reportFile,
-        blocked: res.text.split("\n").filter((l) => /^\s*(?:[-*]\s*)?BLOCKED:/i.test(l)).map((l) => l.trim()),
+        // "BLOCKED: none" / "n/a" means the agent was NOT blocked
+        blocked: res.text.split("\n").filter((l) => /^\s*(?:[-*]\s*)?BLOCKED:/i.test(l) && !/BLOCKED:\W*(?:none|no|n\/?a|nothing)?\W*$/i.test(l)).map((l) => l.trim()),
       };
       t.attempts.push(attempt);
       log(`${t.id} #${n} finished in ${Math.round(res.latencyMs / 1000)}s${res.failure ? `, failure ${res.failure}` : ""}`);
