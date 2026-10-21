@@ -1,0 +1,103 @@
+:root {
+  --bg:#0a0a0b;
+  --panel:#111113;
+  --raised:#18181b;
+  --line:#27272a;
+  --text:#ededef;
+  --muted:#8a8a93;
+  --run:#60a5fa;
+  --wait:#fbbf24;
+  --ok:#34d399;
+  --bad:#f87171;
+  --g-senior:#a78bfa;
+  --g-agent:#60a5fa;
+  --g-human:#fbbf24;
+  --g-verify:#34d399;
+  --g-flow:#94a3b8;
+  --g-workspace:#94a3b8;
+  --g-output:#f472b6;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: "Cascadia Mono",Consolas,monospace;
+}
+
+.sm-btn {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+}
+
+.sm-btn:hover {
+  background: #222226;
+}
+
+.sm-btn:disabled {
+  opacity: 0.4;
+}
+
+.sm-btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.sm-btn-primary:hover {
+  background: var(--text);
+}
+
+.sm-input {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.sm-input:focus {
+  border-color: var(--muted);
+  outline: none;
+}
+
+.sm-input:is(select, textarea) {
+  height: auto;
+}
+
+.sm-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sm-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--run);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
