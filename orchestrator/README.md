@@ -7,8 +7,8 @@ evidence (tests, metrics, scope), gets an independent review, and then accepts,
 retries, reassigns or escalates to you. Everything is recorded in an Obsidian
 vault, and the router learns from it.
 
-The workflow is a graph of nodes (`workflows/default.json`), n8n style, so the
-planned desktop app can draw and edit it. The CLI and the app drive the same engine.
+The workflow is a graph of nodes (`workflows/default.json`), n8n style: edit the
+JSON to change the flow (`node src/cli.ts nodes` lists the node types). The CLI drives the engine.
 
 ## Quick start
 

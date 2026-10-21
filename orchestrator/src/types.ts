@@ -1,4 +1,4 @@
-// Shared types. The engine, the CLI and (later) the desktop app all speak these.
+// Shared types for the engine and the CLI.
 
 export type Mode = "edit" | "readonly";
 export type Risk = "low" | "medium" | "high";
@@ -173,7 +173,7 @@ export interface RunState {
   error?: string;
 }
 
-/* ---- workflow graph (n8n-shaped, so the desktop app can draw and edit it) ---- */
+/* ---- workflow graph (n8n-shaped nodes and port edges) ---- */
 export interface WorkflowNode {
   id: string;
   type: string;

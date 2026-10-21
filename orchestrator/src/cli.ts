@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// orch: command line for the orchestrator. The desktop app will drive the same Engine.
+// orch: command line for the orchestrator engine.
 import fs from "node:fs";
 import path from "node:path";
 import { Engine, validate } from "./engine.ts";
@@ -7,7 +7,7 @@ import { NODE_TYPES } from "./nodes/index.ts";
 import { buildCodeGraph } from "./graph.ts";
 import { runBenchmarks, selftest } from "./bench.ts";
 import { CATEGORIES, type Category, type Mode, type Risk, type RunState, type Tier } from "./types.ts";
-import { git, now, readJson, ROOT, shell } from "./util.ts";
+import { git, now, readJson, shell } from "./util.ts";
 
 const HELP = `orch: a senior model managing a team of coding agents
 
@@ -33,11 +33,6 @@ const HELP = `orch: a senior model managing a team of coding agents
   orch bench --selftest                  prove every benchmark fails before and passes with its solution
   orch import-scorecard <file>           import old scorecard.json attempts as execution records
 
-Smurf (desktop app backend, docs/SMURF.md):
-  orch server [--port 47821] [--host 127.0.0.1] [--data ./smurf-data]
-                                         API for the desktop app (runs in Docker); token: SMURF_TOKEN or <data>/token
-  orch runner [--server ws://127.0.0.1:47821] [--token T]
-                                         host runner: executes runs for the server (token: SMURF_TOKEN)
 
 Categories: ${CATEGORIES.join(", ")}`;
 
@@ -73,23 +68,6 @@ function summary(s: RunState) {
 }
 
 async function main() {
-  if (cmd === "server") {
-    const { SmurfServer, loadToken } = await import("./server/server.ts");
-    const dataDir = path.resolve(flag("--data") || process.env.SMURF_DATA || path.join(ROOT, "smurf-data"));
-    const port = Number(flag("--port") || process.env.SMURF_PORT || 47821);
-    const host = flag("--host") || process.env.SMURF_HOST || "127.0.0.1";
-    const server = new SmurfServer({ port, host, token: loadToken(dataDir), dataDir });
-    await server.listen();
-    console.log(`smurf-server on http://${host}:${port} (data ${dataDir})`);
-    return new Promise<void>(() => {});
-  }
-  if (cmd === "runner") {
-    const { Runner } = await import("./server/runner.ts");
-    const token = flag("--token") || process.env.SMURF_TOKEN;
-    if (!token) throw new Error("runner needs the server token: --token or SMURF_TOKEN");
-    await new Runner().connect(flag("--server") || process.env.SMURF_SERVER || "ws://127.0.0.1:47821", token);
-    process.exit(0); // replaced by a newer runner
-  }
   const engine = new Engine();
   switch (cmd) {
     case "init": {

@@ -1,5 +1,5 @@
-// Node registry. Each node type declares its ports and parameters, so the
-// desktop app can draw it and render a settings form without knowing the code.
+// Node registry. Each node type declares its ports and parameters, so `orch nodes`
+// and workflow validation can describe it without knowing the code.
 import type { NodeCtx } from "../engine.ts";
 import type { ParamSpec } from "../types.ts";
 import { seniorNodes } from "./senior.ts";
