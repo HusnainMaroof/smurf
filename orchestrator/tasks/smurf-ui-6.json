@@ -1,0 +1,15 @@
+[
+  {
+    "id": "canvas-save",
+    "title": "Workflows: saving from the classic canvas keeps Smurf node types and params",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 35,
+    "files": ["desktop/src/services/workflowApi.ts", "desktop/src/services/workflowApi.test.ts", "desktop/src/services/workflowFormat.ts"],
+    "checks": [
+      { "name": "build", "cmd": "pnpm --dir desktop build" },
+      { "name": "tests", "cmd": "pnpm --dir desktop exec vitest run" }
+    ],
+    "brief": "Desktop app (folder desktop/). Read desktop/src/services/workflowApi.ts (graphToCompiler, compilerToGraph, loadUserWorkflow, saveUserWorkflow) and desktop/src/services/workflowFormat.ts (compilerToCanvas, canvasToCompiler) first.\nBug: linear Smurf workflows open in the classic canvas: graphToCompiler -> compilerToCanvas -> user edits -> canvasToCompiler -> saveUserWorkflow -> compilerToGraph. On that path (a) canvasToCompiler writes human_gate/check nodes with only data.label, so compilerToGraph emits type 'undefined'; (b) canvasToCompiler drops data.params for every node; (c) canvasToCompiler adds an { id: 'end', type: 'end' } node plus edges to it, but Smurf graphs have no end node (a node with no outgoing edge ends the run).\n1. workflowFormat.ts canvasToCompiler: for human_gate and check nodes also set data.agent = step.agent when step.agent is a non-empty string. Change nothing else in that file.\n2. workflowApi.ts compilerToGraph(w, base?): drop nodes whose id is 'start' or whose type is 'end'; drop edges whose source or target is 'start' or an end node (still use the start edge to find g.start). For each remaining node, with b = base?.nodes.find(n => n.id === node.id): type = data.agent if it is a non-empty string, else b?.type, else throw Error(`Node ${node.id} has no Smurf node type`); params = data.params if it is a non-empty object, else b?.params (omit if neither); name and position as today (position falls back to b?.position). Keep the existing round-trip tests passing unchanged.\n3. saveUserWorkflow: before the PUT, GET `${BASE}/api/workflows/user/${encodeURIComponent(workflow.id)}` with serverFetch; when res.ok use its body.graph as base, otherwise (404, network error) no base. Pass the base to compilerToGraph. Everything else stays as today.\n4. loadUserWorkflow: use encodeURIComponent(id) in the URL.\n5. Tests in workflowApi.test.ts (keep existing ones): build a linear graph { start: 'plan', nodes: plan (type 'senior.plan', params { maxTasks: 3 }), gate (type 'human.approval', params { timeoutMin: 5 }), check (type 'verify.evidence') }, edges plan->gate->check. Run graphToCompiler -> compilerToCanvas -> canvasToCompiler -> compilerToGraph(result, graph) and assert: node ids and types equal the original, params equal the original, start is 'plan', no node or edge mentions 'end'. Also: compilerToGraph throws for a node with no agent and no base."
+  }
+]
