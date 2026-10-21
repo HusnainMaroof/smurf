@@ -4,20 +4,15 @@ State on 2026-10-21: the desktop/web app is removed; the work is the orchestrato
 Start by loading the `orch-ship` skill (and `orchestrator`, `orch-fix` as needed). Commands below run
 in `orchestrator/`; add `ORCH_CONFIG=config/free-only.json` for runs.
 
-## 1. Finish the read-only path test (in progress when pushed)
+## 1. Merge the read-only path test
 
-Run `2026-10-21-read-only-path-check-research-review-div` on `smurf-demo` (batch
-`tasks/demo-readonly-check.json`): a research task, a review task (both read-only) and `add-div`
-(coding). It tests the fix that read-only agents give their report as the final answer instead of
-being blocked on writing `.orch-report.md`.
+Run `2026-10-21-read-only-path-check-research-review-div` (batch `tasks/demo-readonly-check.json`) finished:
+3/3 accepted in 2 min. Both read-only tasks (research, review) were accepted with no escalation, so
+the report-as-final-answer fix works on real models (one rate-limit reassign, not a bug).
 
-- [ ] `node src/cli.ts summary 2026-10-21-read-only-path-check-research-review-div`
-- [ ] For `explain-eq` and `review-math`: the decision is accept (not escalate), and
-      `vault/Runs/<run>/<task>-a1-report.md` holds the real findings with file:line.
-      If either escalated on BLOCKED or "report", use the `orch-fix` skill.
-- [ ] Read the `add-div` diff, then `node src/cli.ts merge <run>`.
-- [ ] If the run is still marked running but no process owns it, `node src/cli.ts resume <run>`
-      recovers it.
+- [ ] Read the reports: `vault/Runs/<run>/explain-eq-a2-report.md`, `review-math-a1-report.md`.
+- [ ] Read the `add-div` diff (`git -C C:/Users/husna/smurf-demo diff main...orch/<run>`), then
+      `node src/cli.ts merge 2026-10-21-read-only-path-check-research-review-div`.
 
 ## 2. Clean up
 
