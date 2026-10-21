@@ -6,3 +6,4 @@ desktop/src-tauri/target/
 desktop/src-tauri/gen/
 smurf-data/
 *.log
+.claude/worktrees/
