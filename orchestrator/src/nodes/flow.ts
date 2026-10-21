@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { NodeType } from "./index.ts";
-import { WAIT } from "../types.ts";
+import { WAIT, type RunState, type Task } from "../types.ts";
 import { modelLink } from "../vault.ts";
 import { buildCodeGraph } from "../graph.ts";
 import { commandExists, git } from "../util.ts";
@@ -20,6 +20,29 @@ export function followUps(report: string): string[] {
     else items.push(line.trim());
   }
   return items.filter((l) => !/^(none|n\/a|nothing)\.?$/i.test(l));
+}
+
+/** Skips tasks whose dependencies failed, then returns the first pending task whose dependencies are accepted and that `free` allows. */
+export function pickReady(s: RunState, free: (t: Task) => boolean, log: (msg: string) => void): Task | undefined {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const t of s.tasks.filter((x) => x.status === "pending")) {
+      const dead = t.deps.filter((d) => ["failed", "skipped"].includes(s.tasks.find((x) => x.id === d)?.status ?? ""));
+      if (dead.length) {
+        t.status = "skipped";
+        log(`skip ${t.id}: dependency ${dead.join(", ")} did not finish`);
+        changed = true;
+      }
+    }
+  }
+  return s.tasks.find((t) => t.status === "pending" && t.deps.every((d) => s.tasks.find((x) => x.id === d)?.status === "accepted") && free(t));
+}
+
+/** True when two tasks may touch the same file (folders end with "/"). */
+export function filesOverlap(a: string[], b: string[]): boolean {
+  const hit = (x: string, y: string) => x === y || (x.endsWith("/") && y.startsWith(x));
+  return a.some((x) => b.some((y) => hit(x, y) || hit(y, x)));
 }
 
 export const flowNodes: NodeType[] = [
@@ -73,21 +96,9 @@ export const flowNodes: NodeType[] = [
     group: "flow",
     description: "Picks the next pending task whose dependencies are accepted (loop port 'task'); 'done' when none are left. Tasks whose dependencies failed are skipped.",
     ports: ["task", "done"],
-    params: [],
+    params: [{ name: "parallel", type: "number", default: 3, description: "Tasks run side by side when they share no files and no unfinished dependencies. 1 = one at a time." }],
     async run({ s, log }) {
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const t of s.tasks.filter((x) => x.status === "pending")) {
-          const dead = t.deps.filter((d) => ["failed", "skipped"].includes(s.tasks.find((x) => x.id === d)?.status ?? ""));
-          if (dead.length) {
-            t.status = "skipped";
-            log(`skip ${t.id}: dependency ${dead.join(", ")} did not finish`);
-            changed = true;
-          }
-        }
-      }
-      const next = s.tasks.find((t) => t.status === "pending" && t.deps.every((d) => s.tasks.find((x) => x.id === d)?.status === "accepted"));
+      const next = pickReady(s, () => true, log);
       if (!next) {
         s.currentTask = undefined;
         return "done";

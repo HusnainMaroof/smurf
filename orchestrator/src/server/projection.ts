@@ -210,7 +210,8 @@ Choose: ${w.options.join(", ")}` });
     ...emptyState(s.id),
     workflow_id: s.workflow,
     current_instruction: s.request,
-    active_node_id: s.cursor,
+    // parallel tasks: the waiting task's node when the run waits, else the first running task's node
+    active_node_id: (s.lanes?.find((l) => l.state === "waiting") ?? s.lanes?.find((l) => l.state === "running"))?.cursor ?? s.cursor,
     active_agent: lastAttempt?.model ?? (cur ? cur.id : "Senior"),
     status: s.status === "running" ? "running" : s.status === "waiting" ? "awaiting_human" : s.status === "done" && allAccepted ? "passed" : "failed",
     messages: m,

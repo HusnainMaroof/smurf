@@ -13,7 +13,7 @@
   "scripts": {
     "orch": "node src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node test/e2e.ts && node test/smurf.ts",
+    "test": "node test/e2e.ts && node test/parallel.ts && node test/smurf.ts",
     "server": "node src/cli.ts server",
     "runner": "node src/cli.ts runner"
   },

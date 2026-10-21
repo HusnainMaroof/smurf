@@ -9,7 +9,10 @@
       "position": [
         0,
         0
-      ]
+      ],
+      "params": {
+        "parallel": 1
+      }
     },
     {
       "id": "prepare",

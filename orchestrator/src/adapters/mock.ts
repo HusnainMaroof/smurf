@@ -45,6 +45,7 @@ export class MockAdapter implements Adapter {
     else {
       const changed: string[] = [];
       for (const e of s.edits[req.model] || []) {
+        if (req.allowedFiles?.length && !req.allowedFiles.includes(e.file)) continue; // agents stay in their task's files
         const f = path.join(req.cwd, e.file);
         const before = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
         if (before.includes(e.find)) {

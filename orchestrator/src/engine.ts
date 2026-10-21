@@ -1,5 +1,6 @@
 // Workflow engine. A workflow is a graph of nodes joined by edges on named output
-// ports (n8n / LangGraph shape). The engine runs one node at a time, follows the
+// ports (n8n / LangGraph shape). The engine runs one node at a time (tasks from a
+// tasks.next node can run side by side, each with its own cursor), follows the
 // edge for the port the node returned, and saves the run state after every step,
 // so a run can stop (waiting for the owner) and resume later from the same node.
 import { createHash } from "node:crypto";
@@ -12,6 +13,7 @@ import { NODE_TYPES } from "./nodes/index.ts";
 import { Router } from "./router.ts";
 import { WAIT, type Mode, type Project, type RunResult, type RunState, type Task, type Workflow } from "./types.ts";
 import { extractJson, now, ROOT, readJson } from "./util.ts";
+import { filesOverlap, pickReady } from "./nodes/flow.ts";
 import { Vault, type AgentProfile } from "./vault.ts";
 import { Workspace } from "./workspace.ts";
 
@@ -127,12 +129,13 @@ export class Engine extends EventEmitter {
     return "aborted";
   }
 
+  private save(s: RunState) {
+    this.vault.saveState(s);
+    this.emit("state", s);
+  }
+
   private async walk(s: RunState, wf: Workflow): Promise<RunState> {
-    const save = () => {
-      this.vault.saveState(s);
-      this.emit("state", s);
-    };
-    save();
+    this.save(s);
     while (s.status === "running") {
       if (this.aborts.delete(s.id)) {
         s.status = "aborted";
@@ -145,41 +148,17 @@ export class Engine extends EventEmitter {
         s.error = `no node ${s.cursor}`;
         break;
       }
-      const visits = (s.visits[node.id] = (s.visits[node.id] || 0) + 1);
-      if (visits > this.cfg.limits.maxNodeVisits) {
-        s.status = "failed";
-        s.error = `node ${node.id} visited ${visits} times (loop guard)`;
-        break;
-      }
-      const type = NODE_TYPES[node.type];
-      const params = { ...Object.fromEntries(type.params.map((p) => [p.name, p.default])), ...node.params };
-      this.emit("event", { run: s.id, type: "node:start", node: node.id, nodeType: node.type, task: s.currentTask });
-      this.vault.event(s.id, "node:start", { node: node.id, task: s.currentTask });
-      let port: string;
-      try {
-        port = await type.run({
-          engine: this,
-          s,
-          params,
-          task: () => {
-            const t = s.tasks.find((x) => x.id === s.currentTask);
-            if (!t) throw new Error("no current task");
-            return t;
-          },
-          log: (msg, data = {}) => {
-            this.vault.event(s.id, "log", { node: node.id, msg, ...data });
-            this.emit("event", { run: s.id, type: "log", node: node.id, msg, ...data });
-          },
-        });
-      } catch (e) {
-        s.status = "failed";
-        s.error = `${node.id}: ${(e as Error).stack || e}`;
-        this.vault.event(s.id, "error", { node: node.id, error: String(e) });
-        this.emit("event", { run: s.id, type: "error", node: node.id, error: String(e) });
-        break;
-      }
-      this.vault.event(s.id, "node:end", { node: node.id, port });
-      this.emit("event", { run: s.id, type: "node:end", node: node.id, port });
+      const parallel = node.type === "tasks.next" ? Number(node.params?.parallel ?? NODE_TYPES[node.type].params[0]?.default ?? 1) : 1;
+      let port: string | undefined;
+      if (parallel > 1) {
+        s.visits[node.id] = (s.visits[node.id] || 0) + 1;
+        this.vault.event(s.id, "node:start", { node: node.id });
+        this.emit("event", { run: s.id, type: "node:start", node: node.id, nodeType: node.type });
+        port = await this.lanes(s, wf, node, parallel);
+        this.vault.event(s.id, "node:end", { node: node.id, port });
+        this.emit("event", { run: s.id, type: "node:end", node: node.id, port });
+      } else port = await this.step(s, node, s.currentTask);
+      if (port === undefined) continue; // aborting, or the node failed the run
       if (port === WAIT) {
         s.status = "waiting";
         s.visits[node.id]--; // re-entered on resume, not a loop
@@ -192,11 +171,157 @@ export class Engine extends EventEmitter {
         break;
       }
       s.cursor = edge.to;
-      save();
+      this.save(s);
     }
-    save();
+    this.save(s);
     this.emit("event", { run: s.id, type: "run:" + s.status, waiting: s.waiting, error: s.error });
     return s;
+  }
+
+  /** Runs one node for one task; undefined when it failed the run. */
+  private async step(s: RunState, node: Workflow["nodes"][number], taskId: string | undefined): Promise<string | undefined> {
+    const visits = (s.visits[node.id] = (s.visits[node.id] || 0) + 1);
+    if (visits > this.cfg.limits.maxNodeVisits) {
+      s.status = "failed";
+      s.error = `node ${node.id} visited ${visits} times (loop guard)`;
+      return undefined;
+    }
+    const type = NODE_TYPES[node.type];
+    const params = { ...Object.fromEntries(type.params.map((p) => [p.name, p.default])), ...node.params };
+    this.emit("event", { run: s.id, type: "node:start", node: node.id, nodeType: node.type, task: taskId });
+    this.vault.event(s.id, "node:start", { node: node.id, task: taskId });
+    const run = () =>
+      type.run({
+        engine: this,
+        s,
+        params,
+        task: () => {
+          const t = s.tasks.find((x) => x.id === taskId);
+          if (!t) throw new Error("no current task");
+          return t;
+        },
+        log: (msg, data = {}) => {
+          this.vault.event(s.id, "log", { node: node.id, task: taskId, msg, ...data });
+          this.emit("event", { run: s.id, type: "log", node: node.id, task: taskId, msg, ...data });
+        },
+      });
+    let port: string;
+    try {
+      // parallel lanes share the repo's git metadata and the machine: git steps and check commands take turns
+      port = node.type.startsWith("workspace.") ? await this.serial("git", run) : node.type === "verify.evidence" ? await this.serial("checks", run) : await run();
+    } catch (e) {
+      s.status = "failed";
+      s.error = `${node.id}: ${(e as Error).stack || e}`;
+      this.vault.event(s.id, "error", { node: node.id, task: taskId, error: String(e) });
+      this.emit("event", { run: s.id, type: "error", node: node.id, error: String(e) });
+      return undefined;
+    }
+    this.vault.event(s.id, "node:end", { node: node.id, task: taskId, port });
+    this.emit("event", { run: s.id, type: "node:end", node: node.id, task: taskId, port });
+    return port;
+  }
+
+  /**
+   * tasks.next with parallel > 1: starts every ready task that shares no files with a running one (up to `max`),
+   * each walking the task loop with its own cursor until it comes back to `next`. Returns "done" when no task is
+   * left, WAIT when a task needs the owner and nothing else can run, undefined when aborting or failed.
+   */
+  private async lanes(s: RunState, wf: Workflow, next: Workflow["nodes"][number], max: number): Promise<string | undefined> {
+    const entry = wf.edges.find((e) => e.from === next.id && e.port === "task");
+    if (!entry) throw new Error(`${next.id}: no edge on port "task"`);
+    const log = (msg: string) => {
+      this.vault.event(s.id, "log", { node: next.id, msg });
+      this.emit("event", { run: s.id, type: "log", node: next.id, msg });
+    };
+    s.lanes ??= [];
+    const running = new Map<string, Promise<void>>();
+    const launch = (lane: NonNullable<RunState["lanes"]>[number]) => {
+      lane.state = "running";
+      s.currentTask = lane.task;
+      running.set(lane.task, this.lane(s, wf, next.id, lane).finally(() => running.delete(lane.task)));
+    };
+    for (;;) {
+      if (s.status !== "running") break;
+      const aborting = this.aborts.has(s.id);
+      if (!aborting) {
+        for (const lane of s.lanes) {
+          if (running.has(lane.task)) continue;
+          const answered = lane.state === "waiting" && !!s.input && s.waiting?.taskId === lane.task;
+          if (lane.state === "running" || answered || (lane.state === "parked" && !s.waiting)) launch(lane);
+        }
+        while (running.size < max) {
+          const busy = s.lanes.filter((l) => l.state !== "done").map((l) => s.tasks.find((t) => t.id === l.task)!);
+          const t = pickReady(s, (c) => busy.every((b) => !filesOverlap(b.files, c.files)), log);
+          if (!t) break;
+          t.status = "running";
+          log(`task ${t.id}: ${t.title}${running.size ? ` (alongside ${[...running.keys()].join(", ")})` : ""}`);
+          const lane = { task: t.id, cursor: entry.to, state: "running" as const };
+          s.lanes.push(lane);
+          launch(lane);
+        }
+      }
+      if (!running.size) break;
+      this.save(s);
+      await Promise.race(running.values());
+      s.lanes = s.lanes.filter((l) => l.state !== "done");
+    }
+    if (this.aborts.has(s.id) || s.status !== "running") return undefined;
+    if (s.lanes.some((l) => l.state === "waiting")) return WAIT;
+    s.lanes = undefined;
+    s.currentTask = undefined;
+    return "done";
+  }
+
+  /** Walks one task from `lane.cursor` until it is back at `stopAt` (done), waits for the owner, or the run stops. */
+  private async lane(s: RunState, wf: Workflow, stopAt: string, lane: NonNullable<RunState["lanes"]>[number]): Promise<void> {
+    while (s.status === "running" && !this.aborts.has(s.id)) {
+      if (lane.cursor === stopAt) {
+        lane.state = "done";
+        return;
+      }
+      const node = wf.nodes.find((n) => n.id === lane.cursor);
+      if (!node) {
+        s.status = "failed";
+        s.error = `no node ${lane.cursor}`;
+        return;
+      }
+      // one question at a time: a lane that needs the owner while another lane holds the question waits its turn
+      if (NODE_TYPES[node.type].group === "human" && s.waiting && s.waiting.taskId !== lane.task) {
+        lane.state = "parked";
+        return;
+      }
+      const port = await this.step(s, node, lane.task);
+      if (port === undefined) return;
+      if (port === WAIT) {
+        if (s.waiting) s.waiting.taskId ??= lane.task;
+        s.visits[node.id]--;
+        lane.state = "waiting";
+        return;
+      }
+      if (s.status !== "running") return;
+      const edge = wf.edges.find((e) => e.from === node.id && (e.port ?? "out") === port);
+      if (!edge) {
+        lane.state = "done";
+        return;
+      }
+      lane.cursor = edge.to;
+      this.save(s);
+    }
+  }
+
+  private locks = new Map<string, Promise<unknown>>();
+  /** Runs `fn` after every earlier caller of the same lock has finished. */
+  async serial<T>(name: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.locks.get(name) ?? Promise.resolve();
+    const result = prev.catch(() => {}).then(fn);
+    this.locks.set(name, result.catch(() => {}));
+    return result;
+  }
+
+  private busy = new Map<string, number>();
+  /** True while another agent is running on the same provider quota (free tiers rate-limit per backend). */
+  quotaBusy(key: string): boolean {
+    return (this.busy.get(this.models.quota(key)) ?? 0) > 0;
   }
 
   /* ---------- helpers used by nodes ---------- */
@@ -217,7 +342,10 @@ export class Engine extends EventEmitter {
     const inWorktree = path.resolve(o.cwd).startsWith(path.resolve(this.cfg.worktreeRoot));
     // every prompt is kept next to its log, so any decision can be audited later
     fs.writeFileSync(logFile.replace(/\.log$/, ".prompt.txt"), o.prompt);
-    const res = await adapter.run({
+    const quota = this.models.quota(key);
+    this.busy.set(quota, (this.busy.get(quota) ?? 0) + 1);
+    const res = await adapter
+      .run({
       model,
       mode: o.mode,
       prompt: o.prompt,
@@ -230,7 +358,8 @@ export class Engine extends EventEmitter {
       // the worktree path is in every agent's prompt argv; never use a shared path like the repo
       killMarkers: [title, ...(inWorktree ? [o.cwd.replace(/\\/g, "/")] : [])],
       allowedFiles: o.allowedFiles,
-    });
+      })
+      .finally(() => this.busy.set(quota, (this.busy.get(quota) ?? 1) - 1));
     // only metered API spend counts against the budget; subscription CLIs report an
     // equivalent cost that is never billed per run, so it is tracked separately
     if (this.models.billing(key) === "metered") s.costUsd += res.costUsd;

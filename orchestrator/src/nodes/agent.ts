@@ -69,7 +69,9 @@ export const agentNodes: NodeType[] = [
         log(`no model at tier ${t.minTier} for ${t.id}; falling back to ${p.minTier}`);
         ({ candidates, dropped } = await engine.router.rank({ ...req, minTier: p.minTier }));
       }
-      t.candidates = candidates.slice(0, Number(params.top)).map(({ key, score, why }) => ({ key, score, why }));
+      // a free quota already in use by a parallel task would rate-limit both: those models go last (order kept otherwise)
+      const ordered = [...candidates.filter((c) => !engine.quotaBusy(c.key)), ...candidates.filter((c) => engine.quotaBusy(c.key))];
+      t.candidates = ordered.slice(0, Number(params.top)).map(({ key, score, why }) => ({ key, score, why }));
       log(`route ${t.id} (${t.category}): ${t.candidates.map((c) => `${c.key}=${c.score}`).join(", ") || "none"}`, { dropped });
       if (!t.candidates.length) {
         t.approvalReason = `no model fits (${Object.entries(dropped).map(([k, v]) => `${v} ${k}`).join(", ") || "no models discovered"})`;

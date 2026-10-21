@@ -141,6 +141,13 @@ export interface Waiting {
   options: string[];
 }
 
+/** waiting: holds the run's question; parked: reached a human node while another lane held it. */
+export interface Lane {
+  task: string;
+  cursor: string;
+  state: "running" | "waiting" | "parked" | "done";
+}
+
 export interface RunState {
   id: string;
   project: Project;
@@ -154,6 +161,8 @@ export interface RunState {
   understanding?: { goal: string; constraints: string[]; successCriteria: string[]; assumptions: string[]; questions: string[] };
   tasks: Task[];
   currentTask?: string;
+  /** Tasks running side by side from a tasks.next node; each walks the task loop with its own cursor. */
+  lanes?: Lane[];
   integrationBranch: string;
   integrationWorktree?: string;
   costUsd: number; // billed (metered APIs), counts against the budget
