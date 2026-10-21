@@ -9,7 +9,7 @@ import {
   type DesignSession,
 } from '../services/designApi';
 import { useLanguage } from './LanguageContext';
-import { sidecarFetch, sidecarHttpUrl } from '../services/sidecarUrl';
+import { serverFetch, serverHttpUrl } from '../services/serverUrl';
 
 interface PreviewDemoProps {
   screens: DesignScreen[];
@@ -131,8 +131,8 @@ export default function PreviewDemo({
   // Auto-save flows to interaction contract on disk when they change
   useEffect(() => {
     if (!sessionRunId || mutableFlows.length === 0) return;
-    const url = sidecarHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/contract`);
-    sidecarFetch(url, {
+    const url = serverHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/contract`);
+    serverFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ flows: mutableFlows }),
@@ -219,7 +219,7 @@ export default function PreviewDemo({
       preview_options: { extreme: extreme, viewports: viewports }
     };
 
-    sidecarFetch(sidecarHttpUrl('/api/preview/'), {
+    serverFetch(serverHttpUrl('/api/preview/'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -230,8 +230,8 @@ export default function PreviewDemo({
         // Try to restore saved contract from disk, fall back to API-generated flows
         let flows = data.flows || [];
         if (sessionRunId) {
-          const contractUrl = sidecarHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/contract`);
-          sidecarFetch(contractUrl)
+          const contractUrl = serverHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/contract`);
+          serverFetch(contractUrl)
             .then(r => r.json())
             .then(contract => {
               if (contract.interactions && Array.isArray(contract.interactions) && contract.interactions.length > 0) {
@@ -650,8 +650,8 @@ export default function PreviewDemo({
     if (!sessionRunId) return;
     setGeneratingCode(true);
     try {
-      const url = sidecarHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/generate-code/write`);
-      const r = await sidecarFetch(url, { method: 'POST' });
+      const url = serverHttpUrl(`/api/design/sessions/${encodeURIComponent(sessionRunId)}/generate-code/write`);
+      const r = await serverFetch(url, { method: 'POST' });
       const data = await r.json();
       setCodeGenResult(data);
     } catch (e) {
@@ -670,7 +670,7 @@ export default function PreviewDemo({
   };
 
   const aiPrompt = codeGenResult
-    ? `I have a React project generated from a Clutch design prototype (Path A SSOT under react/).
+    ? `I have a React project generated from a Smurf design prototype (Path A SSOT under react/).
 
 **Interaction Contract:**
 ${sessionRunId ? `.clutch/design/sessions/${sessionRunId}/interaction_contract.json` : '(contract not available)'}

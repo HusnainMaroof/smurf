@@ -9,7 +9,7 @@ import { LegacyIcon } from './ui/LegacyIcon';
 
 type McpBindingBadgeProps = {
   mcpServerIds?: string[];
-  /** Only show for Clutch Agent sessions. */
+  /** Only show for Smurf Agent sessions. */
   visible?: boolean;
   onOpenBind?: () => void;
   /** Full-width row inside the + menu. */

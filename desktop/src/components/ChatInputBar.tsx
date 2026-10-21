@@ -97,7 +97,7 @@ interface ChatInputBarProps {
   mentionableAgents?: Array<{ id: string; name: string; logo?: string }>;
   selectedMentionAgentId?: string | null;
   onMentionAgentChange?: (agentId: string | null) => void;
-  /** D40 — Hub MCP bindings for Clutch Agent Chat badge. */
+  /** D40 — Hub MCP bindings for Smurf Agent Chat badge. */
   mcpServerIds?: string[];
   showMcpBindingBadge?: boolean;
   onOpenMcpBind?: () => void;
@@ -1198,8 +1198,8 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
                 </button>
                 <p className="px-3 pb-2 pt-0.5 text-[9.5px] leading-snug text-on-surface-variant/50">
                   {language === 'zh'
-                    ? '仅影响内置 Clutch Agent / MCP，不影响 CLI Agent。'
-                    : 'Applies to Clutch Agent & MCP only — not CLI agents.'}
+                    ? '仅影响内置 Smurf Agent / MCP，不影响 CLI Agent。'
+                    : 'Applies to Smurf Agent & MCP only — not CLI agents.'}
                 </p>
               </div>
             )}

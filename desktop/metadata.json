@@ -1,5 +1,5 @@
 {
-  "name": "Clutch",
+  "name": "Smurf",
   "description": "An interactive, high-precision AI agent orchestration dashboard for developers and technical operators.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -3,7 +3,7 @@ import type { AiToolStatus } from './toolsApi';
 
 export const CLUTCH_AGENT_TYPE = 'clutch' as const;
 
-/** Runtime agent type id (clutch or any registered CLI routing key from the sidecar). */
+/** Runtime agent type id (clutch or any registered CLI routing key from the server). */
 export type AgentTypeId = string;
 
 export type AgentTypeOption = { id: AgentTypeId; label: string };
@@ -91,7 +91,7 @@ const AGENT_TYPE_DISPLAY_LABELS: Record<string, string> = {
   'grok-cli': 'Grok CLI',
 };
 
-/** First-class routed CLI agent types (excludes Clutch built-in LLM). */
+/** First-class routed CLI agent types (excludes Smurf built-in LLM). */
 export const CLI_AGENT_TYPES = Object.keys(AGENT_TYPE_DISPLAY_LABELS);
 
 export function isCliAgentType(agentType: string | null | undefined): boolean {
@@ -103,7 +103,7 @@ export function isCliAgentType(agentType: string | null | undefined): boolean {
 }
 
 const LEGACY_TYPE_LABELS: Record<string, string> = {
-  [CLUTCH_AGENT_TYPE]: 'Clutch',
+  [CLUTCH_AGENT_TYPE]: 'Smurf',
   ...AGENT_TYPE_DISPLAY_LABELS,
 };
 
@@ -123,9 +123,9 @@ export function agentTypeFromTool(tool: AiToolStatus): string | null {
   return null;
 }
 
-/** Agent types available for new agents: Clutch + connected CLI tools. */
+/** Agent types available for new agents: Smurf + connected CLI tools. */
 export function agentTypeOptionsFromTools(tools: AiToolStatus[]): AgentTypeOption[] {
-  const options: AgentTypeOption[] = [{ id: CLUTCH_AGENT_TYPE, label: 'Clutch' }];
+  const options: AgentTypeOption[] = [{ id: CLUTCH_AGENT_TYPE, label: 'Smurf' }];
   const seen = new Set<string>([CLUTCH_AGENT_TYPE]);
 
   for (const tool of tools) {
@@ -164,7 +164,7 @@ export function isClutchAgentType(agent: Pick<Agent, 'agentType' | 'aiEngine' | 
 }
 
 export function agentTypeLabel(agentType: AgentTypeId, tools?: AiToolStatus[]): string {
-  if (agentType === CLUTCH_AGENT_TYPE) return 'Clutch';
+  if (agentType === CLUTCH_AGENT_TYPE) return 'Smurf';
   if (AGENT_TYPE_DISPLAY_LABELS[agentType]) return AGENT_TYPE_DISPLAY_LABELS[agentType];
   const matched = tools?.find(
     (tool) => tool.agentType === agentType || tool.id === agentType,

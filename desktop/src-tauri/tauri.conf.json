@@ -1,13 +1,16 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Clutch",
-  "version": "1.4.2",
-  "identifier": "com.clutch.app",
+  "productName": "Smurf",
+  "version": "0.1.0",
+  "identifier": "com.smurf.app",
   "build": {
-    "beforeDevCommand": "",
-    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": {
+      "script": "pnpm dev",
+      "cwd": ".."
+    },
+    "devUrl": "http://127.0.0.1:47823",
     "beforeBuildCommand": {
-      "script": "corepack pnpm build && node ../../scripts/run-build-sidecar.mjs",
+      "script": "pnpm build",
       "cwd": ".."
     },
     "frontendDist": "../dist"
@@ -16,7 +19,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Clutch",
+        "title": "Smurf",
         "width": 1280,
         "height": 800,
         "resizable": true
@@ -25,20 +28,20 @@
     "security": {
       "csp": {
         "default-src": "'self' tauri: asset:",
-        "connect-src": "'self' ipc: http://ipc.localhost ws://ipc.localhost tauri: http://localhost:8123 ws://localhost:8123 https://connectivitycheck.gstatic.com https://github.com https://objects.githubusercontent.com https://release-assets.githubusercontent.com https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space https://cdn.tailwindcss.com",
-        "img-src": "'self' asset: http://asset.localhost tauri: blob: data: https://api.dicebear.com https://lh3.googleusercontent.com https://*.googleusercontent.com https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space https://oaidalleapiprodscus.blob.core.windows.net",
-        "media-src": "'self' blob: data: http://localhost:8123 http://127.0.0.1:8123 http://localhost:8124 http://127.0.0.1:8124 https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space",
-        "style-src": "'self' 'unsafe-inline' tauri: asset: https://cdn.tailwindcss.com",
-        "script-src": "'self' 'unsafe-inline' tauri: asset: https://cdn.tailwindcss.com",
+        "connect-src": "'self' ipc: http://ipc.localhost ws://ipc.localhost tauri: http://127.0.0.1:47821 ws://127.0.0.1:47821 http://localhost:47821 ws://localhost:47821 https://connectivitycheck.gstatic.com",
+        "img-src": "'self' asset: http://asset.localhost tauri: blob: data: http://127.0.0.1:47821 http://localhost:47821 https://api.dicebear.com https://*.googleusercontent.com",
+        "media-src": "'self' blob: data: http://127.0.0.1:47821 http://localhost:47821",
+        "style-src": "'self' 'unsafe-inline' tauri: asset:",
+        "script-src": "'self' 'unsafe-inline' tauri: asset:",
         "font-src": "'self' asset: data: tauri:"
       },
       "devCsp": {
         "default-src": "'self' tauri: asset:",
-        "connect-src": "'self' ipc: http://ipc.localhost ws://ipc.localhost tauri: http://localhost:3000 ws://localhost:3000 http://127.0.0.1:3000 ws://127.0.0.1:3000 https://connectivitycheck.gstatic.com https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space https://cdn.tailwindcss.com",
-        "img-src": "'self' asset: http://asset.localhost tauri: blob: data: https://api.dicebear.com https://lh3.googleusercontent.com https://*.googleusercontent.com https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space https://oaidalleapiprodscus.blob.core.windows.net",
-        "media-src": "'self' blob: data: http://localhost:8123 http://127.0.0.1:8123 http://localhost:8124 http://127.0.0.1:8124 https://storage.googleapis.com https://apihub.agnes-ai.com https://*.agnes-ai.com https://*.agnes-ai.space",
-        "style-src": "'self' 'unsafe-inline' tauri: asset: https://cdn.tailwindcss.com",
-        "script-src": "'self' 'unsafe-inline' 'unsafe-eval' tauri: asset: https://cdn.tailwindcss.com",
+        "connect-src": "'self' ipc: http://ipc.localhost ws://ipc.localhost tauri: http://127.0.0.1:47823 ws://127.0.0.1:47823 http://localhost:47823 ws://localhost:47823 http://127.0.0.1:47821 ws://127.0.0.1:47821 http://localhost:47821 ws://localhost:47821 https://connectivitycheck.gstatic.com",
+        "img-src": "'self' asset: http://asset.localhost tauri: blob: data: http://127.0.0.1:47821 http://localhost:47821 https://api.dicebear.com https://*.googleusercontent.com",
+        "media-src": "'self' blob: data: http://127.0.0.1:47821 http://localhost:47821",
+        "style-src": "'self' 'unsafe-inline' tauri: asset:",
+        "script-src": "'self' 'unsafe-inline' 'unsafe-eval' tauri: asset:",
         "font-src": "'self' asset: data: tauri:"
       },
       "capabilities": ["default"]
@@ -47,8 +50,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": false,
-    "externalBin": ["binaries/orchestrator"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -56,16 +57,5 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  },
-  "plugins": {
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXkgNjNGQTU1REFBMEVBOTQ5QwpSV1NjbE9xZzJsWDZZMFR6SFRRa0FZMEtGeXNEZlg5U05udE81UnlpTzNMVms3QjREd2tPUVYrbAo=",
-      "endpoints": [
-        "https://github.com/fancy1108/Clutch/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
-    }
   }
 }

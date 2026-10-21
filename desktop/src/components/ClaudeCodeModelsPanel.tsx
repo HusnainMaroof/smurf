@@ -49,15 +49,15 @@ export const ClaudeCodeModelsPanel: React.FC = () => {
   const ccSwitchHint = (() => {
     if (!data || data.cc_switch_cli_available) return null;
     if (data.cc_switch_found) {
-      return t('CC Switch app data detected. Install the cc-switch CLI on PATH to switch providers from Clutch, or switch in the CC Switch desktop app.');
+      return t('CC Switch app data detected. Install the cc-switch CLI on PATH to switch providers from Smurf, or switch in the CC Switch desktop app.');
     }
-    return t('Install the cc-switch CLI on PATH to switch providers from Clutch, or use the CC Switch desktop app.');
+    return t('Install the cc-switch CLI on PATH to switch providers from Smurf, or use the CC Switch desktop app.');
   })();
 
   return (
     <div className="space-y-4 text-left">
       <p className="text-xs text-on-surface-variant leading-relaxed">
-        {t('Models used by the Claude Code CLI subprocess. Clutch does not inject Models Manager settings into Claude agents.')}
+        {t('Models used by the Claude Code CLI subprocess. Smurf does not inject Models Manager settings into Claude agents.')}
       </p>
       <p className="text-[10px] text-neutral-500 leading-relaxed">
         {t('Claude Code provider switching uses CC Switch. OpenCode uses its own native config and does not require cc-switch CLI.')}

@@ -261,7 +261,7 @@ export const WorkflowOrchestration: React.FC<WorkflowOrchestrationProps> = ({
         }
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : t('Cannot connect to Sidecar'));
+          setLoadError(err instanceof Error ? err.message : t('Cannot connect to Server'));
         }
       } finally {
         if (!cancelled) setLoading(false);

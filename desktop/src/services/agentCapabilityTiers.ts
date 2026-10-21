@@ -10,7 +10,7 @@ export const AGENT_CAPABILITY_TABS: Array<{
   labelKey: string;
   agentType: AgentTypeId;
 }> = [
-  { id: 'clutch', labelKey: 'Clutch Agent', agentType: CLUTCH_AGENT_TYPE },
+  { id: 'clutch', labelKey: 'Smurf Agent', agentType: CLUTCH_AGENT_TYPE },
   { id: 'claude-cli', labelKey: 'Claude Code', agentType: 'claude-cli' },
   { id: 'opencode-cli', labelKey: 'OpenCode', agentType: 'opencode-cli' },
   { id: 'mimo-cli', labelKey: 'MiMo Code', agentType: 'mimo-cli' },

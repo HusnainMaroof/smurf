@@ -19,8 +19,8 @@ import {
 import { fetchModelsConfig, mapModelConfigToUi } from '../services/modelsApi';
 import { useLanguage } from './LanguageContext';
 import { fetchToolsStatus, type AiToolStatus } from '../services/toolsApi';
-import { sidecarHttpUrl, sidecarFetch } from '../services/sidecarUrl';
-import { clutchMarkUrl, resolveBrandLogoSrc } from '../services/brandLogos';
+import { serverHttpUrl, serverFetch } from '../services/serverUrl';
+import { smurfMarkUrl, resolveBrandLogoSrc } from '../services/brandLogos';
 import { UnderDevelopmentNotice } from './ui/UnderDevelopmentNotice';
 import { getAgentCapabilityTier } from '../services/agentCapabilityTiers';
 import { AgentNativeCapabilityHint } from './AgentNativeCapabilityHint';
@@ -44,10 +44,10 @@ export function AgentLogo({
 }) {
   const brandSrc = logoSrc ?? resolveBrandLogoSrc({ agentType, toolId });
   if (brandSrc) {
-    const clutch = brandSrc === clutchMarkUrl;
+    const clutch = brandSrc === smurfMarkUrl;
     return (
       <div
-        className={`${className} rounded-full flex items-center justify-center ${clutch ? 'bg-black' : 'bg-white'} relative overflow-hidden flex-shrink-0 select-none border border-neutral-200/40`}
+        className={`${className} rounded-full flex items-center justify-center ${clutch ? 'bg-transparent' : 'bg-white'} relative overflow-hidden flex-shrink-0 select-none border border-neutral-200/40`}
       >
         <img
           src={brandSrc}
@@ -256,7 +256,7 @@ export function AgentManager({
   useEffect(() => {
     if (isModalOpen && agentType === 'ollama-cli') {
       setOllamaError(null);
-      sidecarFetch(sidecarHttpUrl('/api/models/ollama'))
+      serverFetch(serverHttpUrl('/api/models/ollama'))
         .then((res) => res.json())
         .then((data) => {
           if (data.ok && data.models) {
@@ -286,13 +286,13 @@ export function AgentManager({
 
   const handleStartOllama = () => {
     setIsStartingOllama(true);
-    sidecarFetch(sidecarHttpUrl('/api/models/ollama/start'), { method: 'POST' })
+    serverFetch(serverHttpUrl('/api/models/ollama/start'), { method: 'POST' })
       .then((res) => res.json())
       .then((data) => {
         if (data.ok) {
           let attempts = 0;
           const interval = setInterval(() => {
-            sidecarFetch(sidecarHttpUrl('/api/models/ollama'))
+            serverFetch(serverHttpUrl('/api/models/ollama'))
               .then((res) => res.json())
               .then((statusData) => {
                 attempts++;
@@ -336,7 +336,7 @@ export function AgentManager({
     void saveAgents(normalized)
       .then(() => fetchAgents().then((list) => setAgents(list)))
       .catch((error) => {
-        console.error('[Clutch] agents save failed:', error);
+        console.error('[Smurf] agents save failed:', error);
       });
   };
 
@@ -1049,10 +1049,10 @@ export function AgentManager({
                       <div>
                         <div className="flex items-center gap-1.5 px-3 py-1.5 border border-neutral-200 bg-neutral-100 rounded-lg">
                           <LegacyIcon name="bolt" className="text-[14px] text-neutral-700" />
-                          <span className="text-xs font-mono font-bold text-neutral-900">Clutch</span>
+                          <span className="text-xs font-mono font-bold text-neutral-900">Smurf</span>
                         </div>
                         <p className="text-[9.5px] text-neutral-400 mt-1.5 leading-relaxed">
-                          {t('Built-in agent uses Clutch models. Pick a default model below or switch at runtime in chat.')}
+                          {t('Built-in agent uses Smurf models. Pick a default model below or switch at runtime in chat.')}
                         </p>
                       </div>
                     ) : (
@@ -1102,7 +1102,7 @@ export function AgentManager({
                       </select>
                     )}
                     <p className="text-[9.5px] text-neutral-400 leading-relaxed">
-                      {t('Clutch agents run on Sidecar models (chat, image, or video). Leave empty to follow the global model in chat.')}
+                      {t('Smurf agents run on Server models (chat, image, or video). Leave empty to follow the global model in chat.')}
                     </p>
                   </div>
                 )}
@@ -1238,7 +1238,7 @@ export function AgentManager({
                 {capabilityTier === 'full' ? (
                   <div className="space-y-2">
                     <p className="text-[10px] text-neutral-500">
-                      {t('Builtin clutch-tools are always available for Clutch Agent when a workspace is authorized. Bind Hub servers below for extra tools (e.g. local-fs).')}
+                      {t('Builtin clutch-tools are always available for Smurf Agent when a workspace is authorized. Bind Hub servers below for extra tools (e.g. local-fs).')}
                     </p>
                     {/* D44 — one-click enable workspace filesystem MCP */}
                     {!selectedMcpServerIds.includes('local-fs') ? (

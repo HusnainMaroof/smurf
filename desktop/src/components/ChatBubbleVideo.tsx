@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, Download } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { BTN_FOCUS, BTN_SM } from './ui/buttonStyles';
-import { isSidecarApiPath, sidecarAuthedHttpUrl, sidecarFetch, sidecarHttpUrl } from '../services/sidecarUrl';
+import { isServerApiPath, serverAuthedHttpUrl, serverFetch, serverHttpUrl } from '../services/serverUrl';
 
 type ChatBubbleVideoProps = {
   src: string;
@@ -21,8 +21,8 @@ function filenameFromUrl(url: string): string {
 
 async function resolvePlaybackSrc(src: string): Promise<string> {
   const trimmed = src.trim();
-  if (isSidecarApiPath(trimmed)) {
-    return sidecarAuthedHttpUrl(trimmed);
+  if (isServerApiPath(trimmed)) {
+    return serverAuthedHttpUrl(trimmed);
   }
   return trimmed;
 }
@@ -30,16 +30,16 @@ async function resolvePlaybackSrc(src: string): Promise<string> {
 async function downloadVideo(src: string, filename: string): Promise<void> {
   const trimmed = src.trim();
   let fetchUrl = trimmed;
-  if (isSidecarApiPath(trimmed)) {
+  if (isServerApiPath(trimmed)) {
     if (trimmed.startsWith('/api/')) {
-      fetchUrl = sidecarHttpUrl(trimmed);
+      fetchUrl = serverHttpUrl(trimmed);
     } else {
       const url = new URL(trimmed);
-      fetchUrl = sidecarHttpUrl(`${url.pathname}${url.search}`);
+      fetchUrl = serverHttpUrl(`${url.pathname}${url.search}`);
     }
   }
-  const response = isSidecarApiPath(trimmed)
-    ? await sidecarFetch(fetchUrl)
+  const response = isServerApiPath(trimmed)
+    ? await serverFetch(fetchUrl)
     : await fetch(fetchUrl);
   if (!response.ok) {
     throw new Error(`Download failed (${response.status})`);

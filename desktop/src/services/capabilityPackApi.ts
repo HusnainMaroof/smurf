@@ -1,4 +1,4 @@
-import { sidecarFetch, sidecarHttpUrl } from './sidecarUrl';
+import { serverFetch, serverHttpUrl } from './serverUrl';
 
 export interface CapabilityPackRecord {
   id: string;
@@ -8,14 +8,14 @@ export interface CapabilityPackRecord {
 }
 
 export async function fetchCapabilityPacks(): Promise<CapabilityPackRecord[]> {
-  const response = await sidecarFetch(sidecarHttpUrl('/api/capability-packs'));
+  const response = await serverFetch(serverHttpUrl('/api/capability-packs'));
   if (!response.ok) throw new Error(`capability-packs fetch failed (${response.status})`);
   const body = (await response.json()) as { packs: CapabilityPackRecord[] };
   return body.packs ?? [];
 }
 
 export async function importCapabilityPack(path: string): Promise<CapabilityPackRecord> {
-  const response = await sidecarFetch(sidecarHttpUrl('/api/capability-packs/import'), {
+  const response = await serverFetch(serverHttpUrl('/api/capability-packs/import'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path }),
@@ -28,7 +28,7 @@ export async function importCapabilityPack(path: string): Promise<CapabilityPack
 }
 
 export async function uninstallCapabilityPack(packId: string): Promise<void> {
-  const response = await sidecarFetch(sidecarHttpUrl('/api/capability-packs/uninstall'), {
+  const response = await serverFetch(serverHttpUrl('/api/capability-packs/uninstall'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pack_id: packId }),

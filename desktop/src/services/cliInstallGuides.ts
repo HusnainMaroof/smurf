@@ -155,7 +155,7 @@ export const CLI_INSTALL_GUIDES: Record<string, CliInstallGuide> = {
   },
 };
 
-/** CLIs tested in Clutch — primary install recommendations (Settings + onboarding). */
+/** CLIs tested in Smurf — primary install recommendations (Settings + onboarding). */
 export const RECOMMENDED_CLI_IDS = ['codebuddy-cli', 'cursor-cli', 'mimo-cli', 'opencode-cli', 'claude-cli', 'ollama-cli', 'codex-cli', 'agy-cli', 'zcode-cli', 'qoder-cli', 'comate-cli', 'devin-cli', 'copilot-cli', 'trae-cli'] as const;
 
 export const ONBOARDING_RECOMMENDED_CLI_IDS = RECOMMENDED_CLI_IDS;

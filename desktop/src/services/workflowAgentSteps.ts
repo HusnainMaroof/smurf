@@ -17,8 +17,8 @@ export interface WorkflowAgentStep {
 const WORKFLOW_SYSTEM_AGENTS = new Set(['Builder', 'Orchestrator', 'Evaluator', 'Supervisor']);
 
 const TOOL_LABELS: Record<string, string> = {
-  clutch: 'Clutch',
-  llm: 'Clutch',
+  clutch: 'Smurf',
+  llm: 'Smurf',
   'claude-cli': 'Claude CLI',
   'ollama-cli': 'Ollama CLI',
   'antigravity-cli': 'Antigravity CLI',
@@ -35,7 +35,7 @@ const TOOL_LABELS: Record<string, string> = {
 
 export function workflowToolLabel(tool?: string): string {
   const key = (tool ?? '').trim().toLowerCase();
-  if (!key) return 'Clutch';
+  if (!key) return 'Smurf';
   return TOOL_LABELS[key] ?? tool.trim();
 }
 

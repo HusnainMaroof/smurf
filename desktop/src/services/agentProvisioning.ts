@@ -2,7 +2,7 @@ import type { Agent } from '../types';
 import { fetchAgents, saveAgents } from './agentApi';
 import { CLUTCH_AGENT_TYPE, agentTypeFromTool } from './agentTypes';
 import { isBuiltinAgent, mergeAgentsWithBuiltin } from './builtinAgent';
-import { sidecarFetch, sidecarHttpUrl } from './sidecarUrl';
+import { serverFetch, serverHttpUrl } from './serverUrl';
 import type { AiToolStatus } from './toolsApi';
 
 export function findExistingAgentForTool(tool: AiToolStatus, existingAgents: Agent[]): Agent | null {
@@ -42,7 +42,7 @@ export function buildAgentFromConnectedTool(
 }
 
 export async function fetchOllamaModelNames(): Promise<string[]> {
-  const response = await sidecarFetch(sidecarHttpUrl('/api/models/ollama'));
+  const response = await serverFetch(serverHttpUrl('/api/models/ollama'));
   if (!response.ok) return [];
   const data = (await response.json()) as { ok?: boolean; models?: string[] };
   return data.ok && Array.isArray(data.models) ? data.models : [];

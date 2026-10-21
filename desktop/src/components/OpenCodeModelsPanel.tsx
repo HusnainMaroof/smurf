@@ -26,12 +26,12 @@ const PANEL_META: Record<
 > = {
   'opencode-cli': {
     intro:
-      'Models used by the OpenCode CLI (opencode run). This is separate from OpenCode Zen models configured for the Clutch built-in agent.',
+      'Models used by the OpenCode CLI (opencode run). This is separate from OpenCode Zen models configured for the Smurf built-in agent.',
     docsUrl: 'https://dev.opencode.ai/docs/config/',
     docsLabel: 'OpenCode config docs',
     missingConfig: 'No opencode.json found. Run opencode once or create ~/.config/opencode/opencode.json.',
     switchModelsHint: 'Select a model to set the OpenCode CLI default. Free built-in models are included.',
-    installCliHint: 'Install the opencode CLI on PATH to switch models from Clutch.',
+    installCliHint: 'Install the opencode CLI on PATH to switch models from Smurf.',
     showCcSwitch: true,
   },
   'mimo-cli': {
@@ -41,7 +41,7 @@ const PANEL_META: Record<
     docsLabel: 'MiMo Code config docs',
     missingConfig: 'No mimocode.json found. Run mimo once or create ~/.config/mimocode/mimocode.json.',
     switchModelsHint: 'Select a model to set the MiMo Code CLI default. MiMo Auto and Xiaomi models are included.',
-    installCliHint: 'Install the mimo CLI on PATH to switch models from Clutch.',
+    installCliHint: 'Install the mimo CLI on PATH to switch models from Smurf.',
     showCcSwitch: false,
   },
 };
@@ -227,7 +227,7 @@ export const NativeCliModelsPanel: React.FC<NativeCliModelsPanelProps> = ({ agen
               </h3>
               {!data.cc_switch_cli_available && data.cc_switch_found ? (
                 <CcSwitchCliSetupBanner
-                  message={t('CC Switch app data detected. Install the cc-switch CLI on PATH to switch providers from Clutch, or switch in the CC Switch desktop app.')}
+                  message={t('CC Switch app data detected. Install the cc-switch CLI on PATH to switch providers from Smurf, or switch in the CC Switch desktop app.')}
                   onInstalled={() => void refreshSilent()}
                 />
               ) : null}

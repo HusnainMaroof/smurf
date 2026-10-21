@@ -622,7 +622,7 @@ export const OrchestratorBar: React.FC<OrchestratorBarProps> = ({
                 })}
                 <div className="border-t border-outline-variant/40 my-1 mx-2" />
                 <div className="px-3 py-1.5 text-[9.5px] leading-normal text-on-surface-variant/50">
-                  {t('Note: These settings only apply to the built-in Clutch Agent and MCP tools, and do not affect CLI Agents (such as Claude Code).')}
+                  {t('Note: These settings only apply to the built-in Smurf Agent and MCP tools, and do not affect CLI Agents (such as Claude Code).')}
                 </div>
               </div>
             ) : null}

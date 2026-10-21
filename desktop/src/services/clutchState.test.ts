@@ -77,7 +77,7 @@ describe('mergeChatMessages', () => {
       createUserChatMessage('你好'),
       {
         id: 'agent_1',
-        agent: 'Clutch Agent',
+        agent: 'Smurf Agent',
         avatar: '',
         time: '17:01',
         text: '你好！',
@@ -106,7 +106,7 @@ describe('mergeChatMessages', () => {
       createUserChatMessage('你好'),
       {
         id: 'agent_1',
-        agent: 'Clutch Agent',
+        agent: 'Smurf Agent',
         avatar: '',
         time: '17:01',
         text: '你好！',
@@ -173,7 +173,7 @@ describe('mergeChatMessages', () => {
       createUserChatMessage('你好'),
       {
         id: 'agent_1',
-        agent: 'Clutch Agent',
+        agent: 'Smurf Agent',
         avatar: '',
         time: '17:01',
         text: '你好！',
@@ -294,7 +294,7 @@ describe('shouldPreserveOptimisticRun', () => {
     ...userOnly,
     {
       id: 'agent_1',
-      agent: 'Clutch Agent',
+      agent: 'Smurf Agent',
       avatar: '',
       time: '17:01',
       text: 'hi',
@@ -336,7 +336,7 @@ describe('isAuthoritativeMessageReplacement', () => {
       createUserChatMessage('hello'),
       {
         id: 'agent_1',
-        agent: 'Clutch',
+        agent: 'Smurf',
         avatar: '',
         time: '12:00',
         text: 'hi there',
@@ -352,7 +352,7 @@ describe('isAuthoritativeMessageReplacement', () => {
       ...existing,
       {
         id: 'agent_1',
-        agent: 'Clutch',
+        agent: 'Smurf',
         avatar: '',
         time: '12:00',
         text: 'hi there',
@@ -365,7 +365,7 @@ describe('isAuthoritativeMessageReplacement', () => {
     const first = createUserChatMessage('hello');
     const mid = {
       id: 'agent_mid',
-      agent: 'Clutch Agent',
+      agent: 'Smurf Agent',
       avatar: '',
       time: '12:00',
       text: 'working…',
@@ -374,7 +374,7 @@ describe('isAuthoritativeMessageReplacement', () => {
       createUserChatMessage('ok'),
       {
         id: 'agent_tail',
-        agent: 'Clutch Agent',
+        agent: 'Smurf Agent',
         avatar: '',
         time: '12:01',
         text: 'done step',
@@ -382,7 +382,7 @@ describe('isAuthoritativeMessageReplacement', () => {
     ];
     const existing = [first, mid, ...tail, createUserChatMessage('next'), {
       id: 'agent_extra',
-      agent: 'Clutch Agent',
+      agent: 'Smurf Agent',
       avatar: '',
       time: '12:02',
       text: 'extra',
@@ -427,8 +427,8 @@ describe('preferRicherSessionPatch compaction', () => {
       status: 'idle',
       messages: [
         first,
-        { id: 'a1', agent: 'Clutch Agent', avatar: '', time: '12:00', text: 'old1' },
-        { id: 'a2', agent: 'Clutch Agent', avatar: '', time: '12:01', text: 'old2' },
+        { id: 'a1', agent: 'Smurf Agent', avatar: '', time: '12:00', text: 'old1' },
+        { id: 'a2', agent: 'Smurf Agent', avatar: '', time: '12:01', text: 'old2' },
         createUserChatMessage('ok'),
       ],
     } as import('../types').ClutchState;

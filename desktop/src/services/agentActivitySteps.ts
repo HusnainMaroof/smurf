@@ -25,7 +25,7 @@ function humanizeDetailTarget(raw: string): string {
   return trimmed;
 }
 
-/** Split sidecar detail into target vs result/error body (UI shows labels, not ASCII rules). */
+/** Split server detail into target vs result/error body (UI shows labels, not ASCII rules). */
 export function parseToolStepDetail(detail?: string | null): ParsedToolDetail {
   const raw = (detail || '').trim();
   if (!raw) return { target: '', body: null, isError: false, meta: null };

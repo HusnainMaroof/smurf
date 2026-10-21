@@ -1,6 +1,5 @@
-import { sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
-const BASE = '';
 
 export interface ScheduledTask {
   id: string;
@@ -14,7 +13,7 @@ export interface ScheduledTask {
 }
 
 export async function listScheduledTasks(): Promise<ScheduledTask[]> {
-  const res = await sidecarFetch(`${BASE}/api/scheduled-tasks`);
+  const res = await serverFetch(`${BASE}/api/scheduled-tasks`);
   if (!res.ok) return [];
   const data = (await res.json()) as { tasks?: ScheduledTask[] };
   return data.tasks ?? [];
@@ -28,7 +27,7 @@ export async function createScheduledTask(body: {
   run_agent_turn?: boolean;
   confirm?: boolean;
 }): Promise<ScheduledTask | null> {
-  const res = await sidecarFetch(`${BASE}/api/scheduled-tasks`, {
+  const res = await serverFetch(`${BASE}/api/scheduled-tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -39,7 +38,7 @@ export async function createScheduledTask(body: {
 }
 
 export async function deleteScheduledTask(taskId: string): Promise<boolean> {
-  const res = await sidecarFetch(`${BASE}/api/scheduled-tasks/${encodeURIComponent(taskId)}`, {
+  const res = await serverFetch(`${BASE}/api/scheduled-tasks/${encodeURIComponent(taskId)}`, {
     method: 'DELETE',
   });
   return res.ok;

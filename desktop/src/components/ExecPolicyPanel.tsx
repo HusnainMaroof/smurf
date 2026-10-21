@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SIDECAR_BASE as BASE, sidecarFetch } from '../services/sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from '../services/serverUrl';
 import { BTN_SECONDARY } from './ui/buttonStyles';
 import { useLanguage } from './LanguageContext';
 import { SettingsSelect } from './ui/SettingsSelect';
@@ -13,7 +13,7 @@ export const ExecPolicyPanel: React.FC = () => {
   const [action, setAction] = useState<Rule['action']>('ask');
 
   const reload = async () => {
-    const res = await sidecarFetch(`${BASE}/api/preferences/permission-rules`);
+    const res = await serverFetch(`${BASE}/api/preferences/permission-rules`);
     if (!res.ok) return;
     const body = (await res.json()) as { rules?: Rule[] };
     setRules(body.rules ?? []);
@@ -24,7 +24,7 @@ export const ExecPolicyPanel: React.FC = () => {
   }, []);
 
   const persist = async (next: Rule[]) => {
-    const res = await sidecarFetch(`${BASE}/api/preferences/permission-rules`, {
+    const res = await serverFetch(`${BASE}/api/preferences/permission-rules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rules: next }),

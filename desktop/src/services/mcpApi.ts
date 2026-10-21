@@ -1,4 +1,4 @@
-import { SIDECAR_BASE as BASE, sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
 export interface McpServer {
   id: string;
@@ -24,7 +24,7 @@ export interface McpStatusResponse {
 }
 
 export async function fetchMcpStatus(): Promise<McpStatusResponse> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/status`);
+  const response = await serverFetch(`${BASE}/api/mcp/status`);
   if (!response.ok) throw new Error(`mcp status failed (${response.status})`);
   return response.json() as Promise<McpStatusResponse>;
 }
@@ -35,7 +35,7 @@ export async function registerMcpServer(payload: {
   endpoint: string;
   env?: Record<string, string>;
 }): Promise<McpStatusResponse> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/servers/register`, {
+  const response = await serverFetch(`${BASE}/api/mcp/servers/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -48,7 +48,7 @@ export async function registerMcpServer(payload: {
 }
 
 export async function removeMcpServer(id: string): Promise<McpStatusResponse> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/servers/remove`, {
+  const response = await serverFetch(`${BASE}/api/mcp/servers/remove`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id }),
@@ -58,7 +58,7 @@ export async function removeMcpServer(id: string): Promise<McpStatusResponse> {
 }
 
 export async function toggleMcpServer(id: string, enabled: boolean): Promise<McpStatusResponse> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/servers/toggle`, {
+  const response = await serverFetch(`${BASE}/api/mcp/servers/toggle`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, enabled }),
@@ -68,7 +68,7 @@ export async function toggleMcpServer(id: string, enabled: boolean): Promise<Mcp
 }
 
 export async function saveMcpConfig(servers: any[]): Promise<McpStatusResponse> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/config/save`, {
+  const response = await serverFetch(`${BASE}/api/mcp/config/save`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ servers }),
@@ -91,7 +91,7 @@ export async function testMcpServer(id: string): Promise<McpProbeResult> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 135_000);
   try {
-    const response = await sidecarFetch(`${BASE}/api/mcp/servers/test`, {
+    const response = await serverFetch(`${BASE}/api/mcp/servers/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
@@ -108,7 +108,7 @@ export async function testMcpServer(id: string): Promise<McpProbeResult> {
 }
 
 export async function fetchMcpOAuthLoginUrl(): Promise<string | null> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/oauth-login-url`);
+  const response = await serverFetch(`${BASE}/api/mcp/oauth-login-url`);
   if (!response.ok) return null;
   const body = (await response.json()) as { url?: string | null };
   return body.url || null;
@@ -136,7 +136,7 @@ export async function listMcpResources(serverId: string): Promise<{
   resources: McpResourceItem[];
   count: number;
 }> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/mcp/servers/${encodeURIComponent(serverId)}/resources`,
   );
   if (!response.ok) {
@@ -150,7 +150,7 @@ export async function readMcpResource(
   serverId: string,
   uri: string,
 ): Promise<{ text: string; uri: string }> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/servers/resources/read`, {
+  const response = await serverFetch(`${BASE}/api/mcp/servers/resources/read`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: serverId, uri }),
@@ -163,7 +163,7 @@ export async function readMcpResource(
 }
 
 export async function fetchMcpResourcePins(): Promise<McpResourcePin[]> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/resource-pins`);
+  const response = await serverFetch(`${BASE}/api/mcp/resource-pins`);
   if (!response.ok) return [];
   const body = (await response.json()) as { pins?: McpResourcePin[] };
   return body.pins ?? [];
@@ -175,7 +175,7 @@ export async function pinMcpResource(pin: {
   name?: string;
   mimeType?: string | null;
 }): Promise<McpResourcePin[]> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/resource-pins`, {
+  const response = await serverFetch(`${BASE}/api/mcp/resource-pins`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(pin),
@@ -189,7 +189,7 @@ export async function pinMcpResource(pin: {
 }
 
 export async function unpinMcpResource(serverId: string, uri: string): Promise<McpResourcePin[]> {
-  const response = await sidecarFetch(`${BASE}/api/mcp/resource-pins/remove`, {
+  const response = await serverFetch(`${BASE}/api/mcp/resource-pins/remove`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ server_id: serverId, uri }),

@@ -1,11 +1,9 @@
-/** Clutch brand assets — SVG paths for UI and app packaging. */
-export { default as clutchMarkUrl } from './clutch-mark.svg';
-export { default as clutchMarkOnNavyUrl } from './clutch-mark-on-navy.svg';
-export { default as clutchWordmarkUrl } from './clutch-wordmark.svg';
-export { default as clutchLogoUrl } from './clutch-logo.svg';
+/** Smurf brand assets — SVG mark for UI (`<img>`) usage. App icons live in src-tauri/icons. */
+export { default as smurfMarkUrl } from './smurf-mark.svg';
 
 export const BRAND = {
-  black: '#000000',
+  blue: '#2F6BFF',
+  blueDeep: '#1A3FB8',
   white: '#FFFFFF',
   onSurface: '#1A1C1C',
 } as const;

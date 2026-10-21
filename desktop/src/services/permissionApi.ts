@@ -1,4 +1,4 @@
-import { SIDECAR_BASE as BASE, sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
 /** UI modes after Explore→Ask merge (D27 / D54). `explore` still accepted from API as alias. */
 export type PermissionMode = 'ask' | 'auto_edit' | 'plan' | 'full' | 'explore';
@@ -50,7 +50,7 @@ export function normalizePermissionMode(mode: string | null | undefined): Permis
 }
 
 export async function fetchPermissionMode(): Promise<PermissionMode> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/permission-mode`);
+  const response = await serverFetch(`${BASE}/api/preferences/permission-mode`);
   if (!response.ok) throw new Error(`permission-mode fetch failed (${response.status})`);
   const body = (await response.json()) as { permission_mode: string };
   return normalizePermissionMode(body.permission_mode);
@@ -58,7 +58,7 @@ export async function fetchPermissionMode(): Promise<PermissionMode> {
 
 export async function savePermissionMode(mode: PermissionMode): Promise<PermissionMode> {
   const toSave = normalizePermissionMode(mode);
-  const response = await sidecarFetch(`${BASE}/api/preferences/permission-mode`, {
+  const response = await serverFetch(`${BASE}/api/preferences/permission-mode`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode: toSave }),
@@ -72,14 +72,14 @@ export async function savePermissionMode(mode: PermissionMode): Promise<Permissi
 }
 
 export async function fetchStrictSandbox(): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/strict-sandbox`);
+  const response = await serverFetch(`${BASE}/api/preferences/strict-sandbox`);
   if (!response.ok) throw new Error(`strict-sandbox fetch failed (${response.status})`);
   const body = (await response.json()) as { strict_sandbox: boolean };
   return Boolean(body.strict_sandbox);
 }
 
 export async function saveStrictSandbox(enabled: boolean): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/strict-sandbox`, {
+  const response = await serverFetch(`${BASE}/api/preferences/strict-sandbox`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled }),
@@ -93,14 +93,14 @@ export async function saveStrictSandbox(enabled: boolean): Promise<boolean> {
 }
 
 export async function fetchAllowNetwork(): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/allow-network`);
+  const response = await serverFetch(`${BASE}/api/preferences/allow-network`);
   if (!response.ok) throw new Error(`allow-network fetch failed (${response.status})`);
   const body = (await response.json()) as { allow_network: boolean };
   return Boolean(body.allow_network);
 }
 
 export async function saveAllowNetwork(enabled: boolean): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/allow-network`, {
+  const response = await serverFetch(`${BASE}/api/preferences/allow-network`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled }),
@@ -123,13 +123,13 @@ export async function fetchCrossSessionMemory(): Promise<{
   enabled: boolean;
   entries: CrossSessionMemoryEntry[];
 }> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/cross-session-memory`);
+  const response = await serverFetch(`${BASE}/api/preferences/cross-session-memory`);
   if (!response.ok) throw new Error(`cross-session-memory fetch failed (${response.status})`);
   return (await response.json()) as { enabled: boolean; entries: CrossSessionMemoryEntry[] };
 }
 
 export async function saveCrossSessionMemory(enabled: boolean): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/cross-session-memory`, {
+  const response = await serverFetch(`${BASE}/api/preferences/cross-session-memory`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled }),
@@ -143,14 +143,14 @@ export async function saveCrossSessionMemory(enabled: boolean): Promise<boolean>
 }
 
 export async function fetchDefaultWorkspaceId(): Promise<string> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/default-workspace`);
+  const response = await serverFetch(`${BASE}/api/preferences/default-workspace`);
   if (!response.ok) throw new Error(`default-workspace fetch failed (${response.status})`);
   const body = (await response.json()) as { workspace_id?: string };
   return String(body.workspace_id ?? '');
 }
 
 export async function saveDefaultWorkspaceId(workspaceId: string): Promise<string> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/default-workspace`, {
+  const response = await serverFetch(`${BASE}/api/preferences/default-workspace`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ workspace_id: workspaceId }),
@@ -161,14 +161,14 @@ export async function saveDefaultWorkspaceId(workspaceId: string): Promise<strin
 }
 
 export async function fetchHighRiskConfirm(): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/high-risk-confirm`);
+  const response = await serverFetch(`${BASE}/api/preferences/high-risk-confirm`);
   if (!response.ok) throw new Error(`high-risk-confirm fetch failed (${response.status})`);
   const body = (await response.json()) as { high_risk_confirm: boolean };
   return Boolean(body.high_risk_confirm);
 }
 
 export async function saveHighRiskConfirm(enabled: boolean): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/high-risk-confirm`, {
+  const response = await serverFetch(`${BASE}/api/preferences/high-risk-confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled }),
@@ -185,13 +185,13 @@ export type LocalTrustState = {
 };
 
 export async function fetchLocalTrust(): Promise<LocalTrustState> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/local-trust`);
+  const response = await serverFetch(`${BASE}/api/preferences/local-trust`);
   if (!response.ok) throw new Error(`local-trust fetch failed (${response.status})`);
   return (await response.json()) as LocalTrustState;
 }
 
 export async function saveUntrustedConfirm(enabled: boolean): Promise<boolean> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/untrusted-confirm`, {
+  const response = await serverFetch(`${BASE}/api/preferences/untrusted-confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enabled }),
@@ -202,7 +202,7 @@ export async function saveUntrustedConfirm(enabled: boolean): Promise<boolean> {
 }
 
 export async function rememberTrustedId(kind: 'mcp' | 'workflow', itemId: string): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/local-trust`, {
+  const response = await serverFetch(`${BASE}/api/preferences/local-trust`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ kind, item_id: itemId }),
@@ -234,7 +234,7 @@ export async function confirmLocalTrust(
 }
 
 export async function clearCrossSessionMemory(): Promise<number> {
-  const response = await sidecarFetch(`${BASE}/api/preferences/cross-session-memory/clear`, {
+  const response = await serverFetch(`${BASE}/api/preferences/cross-session-memory/clear`, {
     method: 'POST',
   });
   if (!response.ok) throw new Error(`cross-session-memory clear failed (${response.status})`);

@@ -17,7 +17,7 @@ import { saveAvatarPreference } from '../services/themeApi';
 import { fetchAllowNetwork, fetchCrossSessionMemory, fetchDefaultWorkspaceId, fetchHighRiskConfirm, fetchLocalTrust, fetchStrictSandbox, clearCrossSessionMemory, saveAllowNetwork, saveCrossSessionMemory, saveDefaultWorkspaceId, saveHighRiskConfirm, saveStrictSandbox, saveUntrustedConfirm } from '../services/permissionApi';
 import { FONT_SIZE_LABEL_KEYS, FONT_SIZE_OPTIONS, type AppFontSize } from '../services/fontSizePreference';
 import { fetchWorkspaces, type WorkspaceInfo } from '../services/workspaceApi';
-import { SIDECAR_BASE as BASE, sidecarFetch } from '../services/sidecarUrl';
+import { SERVER_BASE as BASE, openConnectScreen, serverFetch } from '../services/serverUrl';
 import { setUserChatAvatar } from '../services/clutchState';
 import defaultAvatar from '../assets/default_avatar.jpg';
 
@@ -583,7 +583,7 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
                       {t('Allow network')}
                     </h3>
                     <p className="text-[11px] text-on-surface-variant/80 max-w-xl">
-                      {t('Enable the builtin web_search tool for Clutch Agent. On by default.')}
+                      {t('Enable the builtin web_search tool for Smurf Agent. On by default.')}
                     </p>
                     <button
                       type="button"
@@ -611,7 +611,7 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
                       {t('Cross-session memory')}
                     </h3>
                     <p className="text-[11px] text-on-surface-variant/80 max-w-xl">
-                      {t('Let Clutch Agent remember preferences across Chat sessions. Project notes go to .clutch/memory/MEMORY.md (open in Files).')}
+                      {t('Let Smurf Agent remember preferences across Chat sessions. Project notes go to .clutch/memory/MEMORY.md (open in Files).')}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <button
@@ -659,7 +659,7 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
                         data-testid="memory-search-run"
                         className={`${BTN_SECONDARY} px-3 py-1.5 text-xs font-semibold`}
                         onClick={() => {
-                          void sidecarFetch(`${BASE}/api/memory/search?q=${encodeURIComponent(memoryQuery)}`)
+                          void serverFetch(`${BASE}/api/memory/search?q=${encodeURIComponent(memoryQuery)}`)
                             .then(async (res) => {
                               if (!res.ok) return;
                               const body = (await res.json()) as { hits?: Array<{ rel: string; snippet: string; path: string }> };
@@ -732,8 +732,26 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
                       {t('Version')}
                     </h3>
                     <p data-testid="general-app-version" className="text-xs font-mono text-on-surface">
-                      Clutch v{appVersion || '—'}
+                      Smurf v{appVersion || '—'}
                     </p>
+                  </div>
+
+                  <div
+                    data-testid="settings-server-connection"
+                    className="bg-surface-container/30 p-6 rounded-2xl border border-outline/30 space-y-3"
+                  >
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                      {t('Server connection')}
+                    </h3>
+                    <p className="text-xs font-mono text-on-surface break-all">{BASE}</p>
+                    <button
+                      type="button"
+                      data-testid="settings-open-connect"
+                      onClick={() => openConnectScreen()}
+                      className={`${BTN_SECONDARY} ${BTN_FOCUS}`}
+                    >
+                      {t('Change server / token')}
+                    </button>
                   </div>
                 </div>
               </SettingsPageShell>

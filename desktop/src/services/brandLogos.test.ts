@@ -14,7 +14,7 @@ describe('brandLogos', () => {
     expect(resolveToolBrandLogo('gemini-cli')).toBeUndefined();
   });
 
-  it('maps clutch agents to the Clutch brand mark', () => {
+  it('maps clutch agents to the Smurf brand mark', () => {
     expect(resolveBrandLogoSrc({ agentType: 'clutch' })).toBeTruthy();
     expect(resolveBrandLogoSrc({ agent: { agentType: 'clutch' } })).toBeTruthy();
   });

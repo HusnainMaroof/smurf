@@ -87,7 +87,7 @@ export const McpServerHub: React.FC = () => {
       setServers(status.servers);
     } catch {
       setServers([]);
-      setError(t('Sidecar unavailable — cannot read MCP status.'));
+      setError(t('Server unavailable — cannot read MCP status.'));
     } finally {
       setLoading(false);
     }
@@ -195,7 +195,7 @@ export const McpServerHub: React.FC = () => {
         isModalStyle
         icon="terminal"
         title={t('MCP Server Hub')}
-        description={t('Clutch MCP Hub bindings apply to the built-in agent. CLI tabs show each tool native MCP configuration (read-only).')}
+        description={t('Smurf MCP Hub bindings apply to the built-in agent. CLI tabs show each tool native MCP configuration (read-only).')}
       />
 
         <AgentCapabilityTabs activeTab={capabilityTab} onTabChange={setCapabilityTab} />
@@ -263,7 +263,7 @@ export const McpServerHub: React.FC = () => {
                   ))}
                 </ul>
                 <p className="text-[10px] text-on-surface-variant">
-                  {t('Pinned resources are injected into Clutch Agent Chat context.')}
+                  {t('Pinned resources are injected into Smurf Agent Chat context.')}
                 </p>
               </div>
             ) : null}

@@ -37,7 +37,7 @@ describe('workflowAgentSteps', () => {
     expect(steps.map((step) => step.agentName)).toEqual(['The Researcher', 'The Artist']);
     expect(steps[0].agentType).toBe('Claude CLI');
     expect(steps[0].toolId).toBe('claude-cli');
-    expect(steps[1].agentType).toBe('Clutch');
+    expect(steps[1].agentType).toBe('Smurf');
   });
 
   it('resolves agent type from configured agent when workflow tool is llm', () => {
@@ -48,7 +48,7 @@ describe('workflowAgentSteps', () => {
 
   it('maps workflow tool ids to labels', () => {
     expect(workflowToolLabel('claude-cli')).toBe('Claude CLI');
-    expect(workflowToolLabel('clutch')).toBe('Clutch');
+    expect(workflowToolLabel('clutch')).toBe('Smurf');
   });
 
   it('prefers active node over reply-count when backend is on a later step', () => {
@@ -139,6 +139,6 @@ describe('workflowAgentSteps', () => {
     const steps = orderedWorkflowAgentSteps(conflicting, [...agents]);
     expect(steps).toHaveLength(1);
     expect(steps[0].toolId).toBe('clutch');
-    expect(steps[0].agentType).toBe('Clutch');
+    expect(steps[0].agentType).toBe('Smurf');
   });
 });

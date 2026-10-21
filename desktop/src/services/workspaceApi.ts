@@ -34,11 +34,9 @@ export interface WorkspaceGitInfo {
 }
 
 import {
-  SIDECAR_BASE as BASE,
-  SIDECAR_DEV_PORT,
-  SIDECAR_PROD_PORT,
-  sidecarFetch as authorizedSidecarFetch,
-} from './sidecarUrl';
+  SERVER_BASE as BASE,
+  serverFetch as authorizedServerFetch,
+} from './serverUrl';
 
 function stableWorkspaceId(path: string): string {
   return `ws_${btoa(path).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)}`;
@@ -63,19 +61,17 @@ function normalizeWorkspace(body: Record<string, unknown>): WorkspaceInfo {
   return { id, workspace_path, name };
 }
 
-async function sidecarFetch(input: string, init?: RequestInit): Promise<Response> {
+async function serverFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
-    return await authorizedSidecarFetch(input, init);
+    return await authorizedServerFetch(input, init);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Cannot reach Clutch Sidecar (${detail}). Dev uses port ${SIDECAR_DEV_PORT}; packaged app uses ${SIDECAR_PROD_PORT}.`,
-    );
+    throw new Error(`Cannot reach smurf-server at ${BASE} (${detail}).`);
   }
 }
 
 export async function fetchWorkspaces(): Promise<WorkspacesList> {
-  const response = await sidecarFetch(`${BASE}/api/workspaces`);
+  const response = await serverFetch(`${BASE}/api/workspaces`);
   if (response.status === 404) {
     const active = await fetchWorkspace();
     if (!active) return { workspaces: [], active_id: null };
@@ -86,7 +82,7 @@ export async function fetchWorkspaces(): Promise<WorkspacesList> {
 }
 
 export async function fetchWorkspace(): Promise<WorkspaceInfo | null> {
-  const response = await sidecarFetch(`${BASE}/api/workspace`);
+  const response = await serverFetch(`${BASE}/api/workspace`);
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`workspace fetch failed (${response.status})`);
   const body = (await response.json()) as Record<string, unknown>;
@@ -94,13 +90,13 @@ export async function fetchWorkspace(): Promise<WorkspaceInfo | null> {
 }
 
 export async function addWorkspace(path: string): Promise<WorkspaceInfo> {
-  let response = await sidecarFetch(`${BASE}/api/workspaces`, {
+  let response = await serverFetch(`${BASE}/api/workspaces`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path }),
   });
   if (response.status === 404) {
-    response = await sidecarFetch(`${BASE}/api/workspace`, {
+    response = await serverFetch(`${BASE}/api/workspace`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
@@ -118,13 +114,13 @@ export async function addWorkspace(path: string): Promise<WorkspaceInfo> {
 export const authorizeWorkspace = addWorkspace;
 
 export async function activateWorkspace(workspaceId: string): Promise<WorkspaceInfo> {
-  const response = await sidecarFetch(`${BASE}/api/workspaces/${encodeURIComponent(workspaceId)}/activate`, {
+  const response = await serverFetch(`${BASE}/api/workspaces/${encodeURIComponent(workspaceId)}/activate`, {
     method: 'POST',
   });
   if (response.status === 404) {
     const active = await fetchWorkspace();
     if (active?.id === workspaceId) return active;
-    throw new Error('Workspace switch is not supported by this Sidecar version');
+    throw new Error('Workspace switch is not supported by this server version');
   }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -135,20 +131,20 @@ export async function activateWorkspace(workspaceId: string): Promise<WorkspaceI
 }
 
 export async function removeWorkspace(workspaceId: string): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/workspaces/${encodeURIComponent(workspaceId)}`, {
+  const response = await serverFetch(`${BASE}/api/workspaces/${encodeURIComponent(workspaceId)}`, {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error(`remove workspace failed (${response.status})`);
 }
 
 export async function fetchRepositoryGroups(): Promise<RepositoryGroupsList> {
-  const response = await sidecarFetch(`${BASE}/api/repository-groups`);
+  const response = await serverFetch(`${BASE}/api/repository-groups`);
   if (!response.ok) throw new Error(`repository groups failed (${response.status})`);
   return response.json() as Promise<RepositoryGroupsList>;
 }
 
 export async function createRepositoryGroup(name: string): Promise<RepositoryGroup> {
-  const response = await sidecarFetch(`${BASE}/api/repository-groups`, {
+  const response = await serverFetch(`${BASE}/api/repository-groups`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
@@ -164,7 +160,7 @@ export async function updateRepositoryGroup(
   groupId: string,
   patch: Partial<Pick<RepositoryGroup, 'name' | 'collapsed' | 'workspace_ids'>>,
 ): Promise<RepositoryGroup> {
-  const response = await sidecarFetch(`${BASE}/api/repository-groups/${encodeURIComponent(groupId)}`, {
+  const response = await serverFetch(`${BASE}/api/repository-groups/${encodeURIComponent(groupId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patch),
@@ -177,7 +173,7 @@ export async function updateRepositoryGroup(
 }
 
 export async function deleteRepositoryGroup(groupId: string): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/repository-groups/${encodeURIComponent(groupId)}`, {
+  const response = await serverFetch(`${BASE}/api/repository-groups/${encodeURIComponent(groupId)}`, {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error(`delete repository group failed (${response.status})`);
@@ -190,7 +186,7 @@ function withWtId(url: string, wtId?: string | null): string {
 }
 
 export async function fetchWorkspaceGit(): Promise<WorkspaceGitInfo> {
-  const response = await sidecarFetch(`${BASE}/api/workspace/git`);
+  const response = await serverFetch(`${BASE}/api/workspace/git`);
   if (response.status === 404) {
     return { is_git_repo: false, branch: null, branches: [] };
   }
@@ -199,7 +195,7 @@ export async function fetchWorkspaceGit(): Promise<WorkspaceGitInfo> {
 }
 
 export async function fetchWorkspaceTree(wtId?: string | null): Promise<FileTreeNode[]> {
-  const response = await sidecarFetch(withWtId(`${BASE}/api/workspace/tree`, wtId));
+  const response = await serverFetch(withWtId(`${BASE}/api/workspace/tree`, wtId));
   if (!response.ok) throw new Error(`workspace tree failed (${response.status})`);
   const body = (await response.json()) as { nodes: FileTreeNode[] };
   return body.nodes;
@@ -208,7 +204,7 @@ export async function fetchWorkspaceTree(wtId?: string | null): Promise<FileTree
 export async function fetchWorkspaceChanges(
   wtId?: string | null,
 ): Promise<{ files: import('../types').UncommittedFile[]; isGitRepo: boolean }> {
-  const response = await sidecarFetch(withWtId(`${BASE}/api/workspace/changes`, wtId));
+  const response = await serverFetch(withWtId(`${BASE}/api/workspace/changes`, wtId));
   if (!response.ok) throw new Error(`workspace changes failed (${response.status})`);
   const body = (await response.json()) as {
     files?: import('../types').UncommittedFile[];
@@ -218,7 +214,7 @@ export async function fetchWorkspaceChanges(
 }
 
 export async function fetchWorkspaceFile(path: string, wtId?: string | null): Promise<string> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     withWtId(`${BASE}/api/workspace/file?path=${encodeURIComponent(path)}`, wtId),
   );
   if (!response.ok) throw new Error(`read file failed (${response.status})`);
@@ -231,7 +227,7 @@ export type WorkspaceFileResolveResult =
   | { ok: false; reason: 'not_found' | 'ambiguous' | string };
 
 export async function resolveWorkspaceFile(path: string): Promise<WorkspaceFileResolveResult> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/workspace/file/resolve?path=${encodeURIComponent(path)}`,
   );
   if (!response.ok) throw new Error(`resolve file failed (${response.status})`);
@@ -242,7 +238,7 @@ export async function uploadWorkspaceAttachment(
   dataUrl: string,
   options?: { analyze?: boolean },
 ): Promise<{ path: string; analysis_text: string }> {
-  const response = await sidecarFetch(`${BASE}/api/workspace/attachments`, {
+  const response = await serverFetch(`${BASE}/api/workspace/attachments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ data_url: dataUrl, analyze: options?.analyze ?? true }),
@@ -250,7 +246,7 @@ export async function uploadWorkspaceAttachment(
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error(
-        'upload attachment failed (404): Sidecar is missing /api/workspace/attachments — restart the orchestrator (dev: uvicorn --reload on 8124; do not use an old packaged sidecar on 8123).',
+        'upload attachment failed (404): attachments are not supported by this smurf-server yet.',
       );
     }
     throw new Error(`upload attachment failed (${response.status})`);
@@ -259,7 +255,7 @@ export async function uploadWorkspaceAttachment(
 }
 
 export async function reassignToBuilder(runId: string, instructions = 'reassign_to_builder'): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/runs/${runId}/reassign`, {
+  const response = await serverFetch(`${BASE}/api/runs/${runId}/reassign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instructions }),

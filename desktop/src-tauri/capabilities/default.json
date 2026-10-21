@@ -1,25 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capability for Clutch desktop",
+  "description": "Default capability for the Smurf desktop window",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "allow-clutch-sidecar-token",
-    "allow-clutch-app-commands",
-    "shell:allow-open",
+    "allow-smurf-app-commands",
     "dialog:default",
-    "dialog:allow-open",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "orchestrator",
-          "sidecar": true
-        }
-      ]
-    },
-    "updater:default",
-    "process:default"
+    "dialog:allow-open"
   ]
 }

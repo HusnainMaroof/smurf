@@ -22,8 +22,8 @@ export const AgentCliCapabilityDetails: React.FC<AgentCliCapabilityDetailsProps>
     <div className="space-y-2">
       <p className="text-[10px] text-neutral-500 leading-relaxed">
         {kind === 'skills'
-          ? t('This agent uses native {label} skills bundled with the CLI — not Clutch Skills Registry bindings.').replace('{label}', label)
-          : t('This agent uses native {label} MCP servers — not Clutch MCP Hub bindings.').replace('{label}', label)}
+          ? t('This agent uses native {label} skills bundled with the CLI — not Smurf Skills Registry bindings.').replace('{label}', label)
+          : t('This agent uses native {label} MCP servers — not Smurf MCP Hub bindings.').replace('{label}', label)}
       </p>
       <button
         type="button"

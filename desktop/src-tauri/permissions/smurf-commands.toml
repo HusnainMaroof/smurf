@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-smurf-app-commands"
+description = "Smurf desktop IPC commands (host OS/arch, folder picker, open path)."
+commands.allow = [
+  "clutch_cpu_arch",
+  "clutch_pick_directory",
+  "clutch_host_os",
+  "clutch_open_path",
+]

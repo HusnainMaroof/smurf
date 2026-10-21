@@ -43,11 +43,11 @@ export function ModelsStep({ modelReady, onModelReady, onSkip }: ModelsStepProps
       return mapped;
     } catch (err) {
       if (err instanceof ModelsConfigError && err.kind === 'server') {
-        setError(t('Sidecar backend error — quit Clutch (Cmd+Q) and reopen the app.'));
+        setError(t('smurf-server returned an error — check the server logs.'));
       } else if (err instanceof ModelsConfigError && err.kind === 'unauthorized') {
-        setError(t('Sidecar session expired — quit Clutch (Cmd+Q) and reopen the app.'));
+        setError(t('Server rejected the token — update it in Settings → Server connection.'));
       } else {
-        setError(t('Cannot reach Clutch sidecar'));
+        setError(t('Cannot reach smurf-server'));
       }
       return null;
     }

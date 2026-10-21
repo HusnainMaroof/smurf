@@ -145,8 +145,8 @@ describe('parseAgentActivitySteps', () => {
 
   it('collapses consecutive duplicate tool+focus', () => {
     const steps = parseAgentActivitySteps([
-      '[CHAT] Step 1: clutch-tools__grep args={"pattern":"Clutch"}',
-      '[CHAT] Step 2: clutch-tools__grep args={"pattern":"Clutch"}',
+      '[CHAT] Step 1: clutch-tools__grep args={"pattern":"Smurf"}',
+      '[CHAT] Step 2: clutch-tools__grep args={"pattern":"Smurf"}',
       '[CHAT] Step 3: clutch-tools__read_file args={"path":"README.md"}',
     ]);
     expect(steps).toHaveLength(2);
@@ -360,7 +360,7 @@ describe('verbGroupHeaderLabel', () => {
           kind: 'search',
           tool: 'grep',
           status: 'running',
-          title: 'Search Clutch',
+          title: 'Search Smurf',
         },
       ]),
     ).toBe('Searching 1 query, Listing 1 dir');

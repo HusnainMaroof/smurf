@@ -3,11 +3,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const GCS_ORIGIN = 'https://storage.googleapis.com';
-
 type TauriCsp = Record<string, string>;
 
 type TauriConfig = {
+  productName: string;
+  identifier: string;
+  build: { devUrl: string };
   app: {
     security: {
       csp: TauriCsp;
@@ -28,27 +29,26 @@ function directiveIncludesOrigin(directive: string, origin: string): boolean {
   return directive.split(/\s+/).includes(origin);
 }
 
-describe('Agnes video CSP', () => {
+describe('Tauri config', () => {
   const config = loadTauriConfig();
 
-  it.each([
-    ['csp', config.app.security.csp],
-    ['devCsp', config.app.security.devCsp],
-  ] as const)('allows GCS video playback in %s', (_label, csp) => {
-    expect(directiveIncludesOrigin(csp['media-src'], GCS_ORIGIN)).toBe(true);
-    expect(directiveIncludesOrigin(csp['connect-src'], GCS_ORIGIN)).toBe(true);
+  it('is branded Smurf and uses the Smurf dev port', () => {
+    expect(config.productName).toBe('Smurf');
+    expect(config.identifier).toBe('com.smurf.app');
+    expect(config.build.devUrl).toBe('http://127.0.0.1:47823');
   });
-});
-
-describe('Design mode Tailwind CSP', () => {
-  const config = loadTauriConfig();
-  const TAILWIND = 'https://cdn.tailwindcss.com';
 
   it.each([
     ['csp', config.app.security.csp],
     ['devCsp', config.app.security.devCsp],
-  ] as const)('allows Tailwind CDN in %s', (_label, csp) => {
-    expect(directiveIncludesOrigin(csp['script-src'], TAILWIND)).toBe(true);
-    expect(directiveIncludesOrigin(csp['connect-src'], TAILWIND)).toBe(true);
+  ] as const)('allows smurf-server HTTP + WebSocket in %s', (_label, csp) => {
+    for (const origin of [
+      'http://127.0.0.1:47821',
+      'ws://127.0.0.1:47821',
+      'http://localhost:47821',
+      'ws://localhost:47821',
+    ]) {
+      expect(directiveIncludesOrigin(csp['connect-src'], origin)).toBe(true);
+    }
   });
 });
