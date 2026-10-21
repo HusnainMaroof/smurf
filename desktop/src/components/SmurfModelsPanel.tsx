@@ -23,6 +23,12 @@ const TIER_LABEL: Record<SmurfModel['tier'], string> = {
   premium: 'Premium',
 };
 
+function adapterLabel(adapter: string): string {
+  return adapter === 'openhands'
+    ? 'OpenHands (ACP)'
+    : adapter.charAt(0).toUpperCase() + adapter.slice(1);
+}
+
 function tierColor(tier: SmurfModel['tier']): string {
   switch (tier) {
     case 'light':
@@ -124,7 +130,7 @@ export const SmurfModelsPanel: React.FC = () => {
   const grouped = models ? groupByAdapter(models) : null;
 
   return (
-    <div className="space-y-6 text-on-surface">
+    <div className="pt-12 space-y-6 text-on-surface">
       {/* Section a: Models */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
@@ -146,7 +152,7 @@ export const SmurfModelsPanel: React.FC = () => {
             Object.keys(grouped).map((adapter) => (
               <div key={adapter} className="bg-surface-container/30 rounded-xl border border-outline/30 overflow-hidden">
                 <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                  {adapter} · {grouped[adapter].length}
+                  {adapterLabel(adapter)} · {grouped[adapter].length}
                 </div>
                 <table className="w-full text-[11px]">
                   <thead>
@@ -277,7 +283,7 @@ export const SmurfModelsPanel: React.FC = () => {
                   className="w-full flex items-center justify-between px-3 py-2 text-left"
                 >
                   <div className="flex items-center gap-3 text-[11px]">
-                    <span className="font-mono text-on-surface-variant">{run.id.slice(0, 8)}</span>
+                    <span className="font-mono text-on-surface-variant whitespace-nowrap">{run.id}</span>
                     <span className="text-on-surface-variant">
                       {formatDate(run.date)}
                     </span>
