@@ -47,6 +47,7 @@ import { PlanCardView, formatPlanRevisePayload, hasPlanStepComments } from './Pl
 import { QuestionCardView } from './QuestionCardView';
 import { TodoCardView, shouldPinLiveTodos } from './TodoCardView';
 import { GoalBarView, shouldShowGoalBar } from './GoalBarView';
+import { GateOptionsBar } from './GateOptionsBar';
 import { SubtaskCardView } from './SubtaskCardView';
 import { BackgroundJobChip, BackgroundJobsBar } from './BackgroundJobsBar';
 import { ForegroundShellBar } from './ForegroundShellBar';
@@ -2143,6 +2144,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
                 </div>
               </div>
             ) : null}
+            <GateOptionsBar />
             <ChatInputBar
               inputValue={inputValue}
               setInputValue={setInputValue}
