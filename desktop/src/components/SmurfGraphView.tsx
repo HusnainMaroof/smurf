@@ -127,13 +127,16 @@ export interface SmurfGraphViewProps {
 }
 
 export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave }) => {
+  const [saved, setSaved] = useState<CompilerWorkflow | null>(null);
+  const current = saved ?? workflow;
+
   const { nodes: baseNodes, edges } = useMemo(() => {
-    const order = layoutOrder(workflow);
+    const order = layoutOrder(current);
     const orderIndex = new Map(order.map((id, index) => [id, index]));
-    const levels = layoutLevels(workflow);
+    const levels = layoutLevels(current);
     const rowsPerLevel = new Map<number, number>();
 
-    const flowNodes: Node[] = workflow.nodes.map((node) => {
+    const flowNodes: Node[] = current.nodes.map((node) => {
       const level = levels.get(node.id) ?? 0;
       const row = rowsPerLevel.get(level) ?? 0;
       rowsPerLevel.set(level, row + 1);
@@ -154,7 +157,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
       };
     });
 
-    const flowEdges: Edge[] = workflow.edges.map((edge, index) => {
+    const flowEdges: Edge[] = current.edges.map((edge, index) => {
       const sourceIndex = orderIndex.get(edge.source);
       const targetIndex = orderIndex.get(edge.target);
       const isBackEdge =
@@ -178,7 +181,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
     });
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [workflow]);
+  }, [current]);
 
   const editable = Boolean(onSave);
 
@@ -194,6 +197,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
 
   // A new workflow resets every local edit.
   useEffect(() => {
+    setSaved(null);
     setPositions({});
     setNames({});
     setParams({});
@@ -222,7 +226,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
   const nodes = useMemo(
     () =>
       baseNodes.map((node) => {
-        const source = workflow.nodes.find((item) => item.id === node.id);
+        const source = current.nodes.find((item) => item.id === node.id);
         const instruction = names[node.id];
         const data = {
           ...(source?.data ?? {}),
@@ -235,7 +239,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
           data: { ...node.data, label: nodeLabel(node.id, data) },
         };
       }),
-    [baseNodes, workflow, names, positions, editable, selectedId],
+    [baseNodes, current, names, positions, editable, selectedId],
   );
 
   const handleNodesChange = (changes: NodeChange[]) => {
@@ -254,7 +258,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
   };
 
   const selectedNode = selectedId
-    ? workflow.nodes.find((node) => node.id === selectedId) ?? null
+    ? current.nodes.find((node) => node.id === selectedId) ?? null
     : null;
   const selectedName = selectedNode
     ? names[selectedNode.id] ??
@@ -276,8 +280,8 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
     setStatus(null);
     setError(null);
     const updated: CompilerWorkflow = {
-      ...workflow,
-      nodes: workflow.nodes.map((node) => {
+      ...current,
+      nodes: current.nodes.map((node) => {
         const position = positions[node.id];
         const instruction = names[node.id];
         const nodeParams = params[node.id];
@@ -297,6 +301,10 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
     };
     try {
       await onSave(updated);
+      setSaved(updated);
+      setPositions({});
+      setNames({});
+      setParams({});
       setStatus('Saved');
       setDirty(false);
     } catch (err) {
@@ -325,6 +333,7 @@ export const SmurfGraphView: React.FC<SmurfGraphViewProps> = ({ workflow, onSave
       elementsSelectable={editable}
       onNodesChange={editable ? handleNodesChange : undefined}
       onNodeClick={editable ? (_event, node) => setSelectedId(node.id) : undefined}
+      onPaneClick={editable ? () => setSelectedId(null) : undefined}
     >
       <Background />
       <Controls />
