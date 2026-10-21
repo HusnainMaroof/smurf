@@ -19,6 +19,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { WorkflowJsonPanel } from './WorkflowJsonPanel';
+import { SmurfGraphView } from './SmurfGraphView';
 import {
   canvasToCompiler,
   compilerToCanvas,
@@ -174,6 +175,7 @@ export const WorkflowOrchestration: React.FC<WorkflowOrchestrationProps> = ({
   const [workflows, setWorkflows] = useState<WorkflowDef[]>([]);
   const [activeWorkflowId, setActiveWorkflowId] = useState<string>('');
   const [viewMode, setViewMode] = useState<EditorViewMode>('canvas');
+  const [compilerWorkflow, setCompilerWorkflow] = useState<CompilerWorkflow | null>(null);
   const [jsonText, setJsonText] = useState('');
   const [canvasCompatible, setCanvasCompatible] = useState(false);
   const [canvasIncompatHint, setCanvasIncompatHint] = useState<string | null>(null);
@@ -220,6 +222,7 @@ export const WorkflowOrchestration: React.FC<WorkflowOrchestrationProps> = ({
 
   const applyCompilerWorkflow = useCallback((item: WorkflowListItem, workflow: CompilerWorkflow) => {
     setActiveItem(item);
+    setCompilerWorkflow(workflow);
     setJsonText(formatCompilerJson(workflow));
     setSaveError(null);
     setSaveStatus(null);
@@ -839,8 +842,7 @@ const edgeColors: Record<string, string> = {
                     <button
                       type="button"
                       data-testid="workflow-canvas-tab"
-                      disabled={!canvasCompatible}
-                      onClick={() => { syncJsonFromCanvas(); setViewMode('canvas'); }}
+                      onClick={() => { if (canvasCompatible) syncJsonFromCanvas(); setViewMode('canvas'); }}
                       className={`px-3 py-1.5 text-[11px] transition-colors ${
                         viewMode === 'canvas'
                           ? 'bg-neutral-900 text-white'
@@ -922,7 +924,7 @@ const edgeColors: Record<string, string> = {
                       : null
                   }
                 />
-              ) : activeWorkflow ? (
+              ) : canvasCompatible && activeWorkflow ? (
                 <div className="flex-1 relative bg-neutral-50/20 min-h-0">
                   <ReactFlow
                     key={activeWorkflowId}
@@ -950,6 +952,10 @@ const edgeColors: Record<string, string> = {
                       </div>
                     </div>
                   )}
+                </div>
+              ) : compilerWorkflow ? (
+                <div className="flex-1 min-h-0 overflow-auto p-4 bg-neutral-50/20">
+                  <SmurfGraphView workflow={compilerWorkflow} />
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-neutral-400 text-xs">
