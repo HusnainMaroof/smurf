@@ -21,6 +21,8 @@ import { SERVER_BASE as BASE, openConnectScreen, serverFetch } from '../services
 import { setUserChatAvatar } from '../services/clutchState';
 import defaultAvatar from '../assets/default_avatar.jpg';
 
+const HIDDEN_VIEWS = new Set<MainView>(['tools', 'skills', 'mcp']);
+
 interface SystemPreferencesModalProps {
   currentView: MainView;
   setView: (view: MainView) => void;
@@ -214,6 +216,7 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
   };
 
   const isModalOpen = ['agents', 'settings', 'workflows', 'tools', 'skills', 'mcp', 'models', 'appearance'].includes(currentView);
+  const activeView: MainView = HIDDEN_VIEWS.has(currentView) ? 'settings' : currentView;
   const navBtnBase = `w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-left text-[11px] transition-all border ${BTN_FOCUS}`;
   const navBtnActive = 'bg-surface-bright text-on-surface font-extrabold border-outline/40 shadow-2xs';
   const navBtnIdle = 'text-on-surface-variant hover:bg-surface-container-high/60 hover:text-on-surface border-transparent';
@@ -244,25 +247,16 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
               <button
                 data-testid="settings-nav-general"
                 onClick={() => setView('settings')}
-                className={`${navBtnBase} ${currentView === 'settings' ? navBtnActive : navBtnIdle}`}
+                className={`${navBtnBase} ${activeView === 'settings' ? navBtnActive : navBtnIdle}`}
               >
                 <LegacyIcon name="settings" className="text-[16px]" />
                 <span className="text-xs">{t("General")}</span>
               </button>
 
               <button
-                data-testid="settings-nav-tools"
-                onClick={() => setView('tools')}
-                className={`${navBtnBase} ${currentView === 'tools' ? navBtnActive : navBtnIdle}`}
-              >
-                <LegacyIcon name="handyman" className="text-[16px]" />
-                <span className="text-xs">{t("AI Tools")}</span>
-              </button>
-
-              <button
                 data-testid="settings-nav-agents"
                 onClick={() => setView('agents')}
-                className={`${navBtnBase} ${currentView === 'agents' ? navBtnActive : navBtnIdle}`}
+                className={`${navBtnBase} ${activeView === 'agents' ? navBtnActive : navBtnIdle}`}
               >
                 <LegacyIcon name="smart_toy" className="text-[16px]" />
                 <span className="text-xs">{t("AI Agents")}</span>
@@ -271,11 +265,11 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
               <button
                 data-testid="settings-nav-workflows"
                 onClick={() => setView('workflows')}
-                className={`${navBtnBase} ${currentView === 'workflows' ? navBtnActive : navBtnIdle}`}
+                className={`${navBtnBase} ${activeView === 'workflows' ? navBtnActive : navBtnIdle}`}
               >
                 <LegacyIcon
                   name="workflow"
-                  className={`text-[16px] ${currentView === 'workflows' ? 'opacity-100' : 'opacity-60'}`}
+                  className={`text-[16px] ${activeView === 'workflows' ? 'opacity-100' : 'opacity-60'}`}
                 />
                 <span className="text-xs">{t("Workflows SOP")}</span>
               </button>
@@ -283,34 +277,16 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
               <button
                 data-testid="settings-nav-models"
                 onClick={() => setView('models')}
-                className={`${navBtnBase} ${currentView === 'models' ? navBtnActive : navBtnIdle}`}
+                className={`${navBtnBase} ${activeView === 'models' ? navBtnActive : navBtnIdle}`}
               >
                 <LegacyIcon name="layers" className="text-[16px]" />
                 <span className="text-xs">{t("Models Config")}</span>
               </button>
 
               <button
-                data-testid="settings-nav-skills"
-                onClick={() => setView('skills')}
-                className={`${navBtnBase} ${currentView === 'skills' ? navBtnActive : navBtnIdle}`}
-              >
-                <LegacyIcon name="school" className="text-[16px]" />
-                <span className="text-xs">{t("Skills Registry")}</span>
-              </button>
-
-              <button
-                data-testid="settings-nav-mcp"
-                onClick={() => setView('mcp')}
-                className={`${navBtnBase} ${currentView === 'mcp' ? navBtnActive : navBtnIdle}`}
-              >
-                <LegacyIcon name="terminal" className="text-[16px]" />
-                <span className="text-xs">{t("MCP Server Hub")}</span>
-              </button>
-
-              <button
                 data-testid="settings-nav-appearance"
                 onClick={() => setView('appearance')}
-                className={`${navBtnBase} ${currentView === 'appearance' ? navBtnActive : navBtnIdle}`}
+                className={`${navBtnBase} ${activeView === 'appearance' ? navBtnActive : navBtnIdle}`}
               >
                 <LegacyIcon name="palette" className="text-[16px]" />
                 <span className="text-xs">{t("Appearance")}</span>
@@ -340,13 +316,13 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
 
           {/* Modal Right Detail Panel */}
           <div className="flex-1 overflow-hidden flex flex-col bg-surface-bright text-on-surface">
-            {currentView === 'agents' ? (
+            {activeView === 'agents' ? (
               <AgentManager
                 isModalStyle={true}
                 activeAgentId={activeAgentId}
                 onActivateAgent={onActivateAgent}
               />
-            ) : currentView === 'workflows' ? (
+            ) : activeView === 'workflows' ? (
               <WorkflowOrchestration
                 isModalStyle={true}
                 onClose={() => setView('chat')}
@@ -354,20 +330,20 @@ export const SystemPreferencesModal: React.FC<SystemPreferencesModalProps> = ({
                 onClearSelectedWorkflow={onClearSelectedWorkflow}
                 selectedWorkflowId={selectedWorkflowId}
               />
-            ) : currentView === 'tools' ? (
+            ) : activeView === 'tools' ? (
               <AiToolsManager isModalStyle={true} />
-            ) : currentView === 'skills' ? (
+            ) : activeView === 'skills' ? (
               <SkillsRegistry />
-            ) : currentView === 'mcp' ? (
+            ) : activeView === 'mcp' ? (
               <McpServerHub />
-            ) : currentView === 'models' ? (
+            ) : activeView === 'models' ? (
               <SmurfModelsPanel />
-            ) : currentView === 'appearance' ? (
+            ) : activeView === 'appearance' ? (
               <ThemeManager 
                 currentThemeId={themeId}
                 setThemeId={setThemeId}
               />
-            ) : currentView === 'settings' ? (
+            ) : activeView === 'settings' ? (
               <SettingsPageShell>
                 <SettingsPageHeader
                   isModalStyle
