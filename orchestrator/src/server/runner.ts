@@ -203,11 +203,11 @@ export class Runner {
     }
   }
 
-  /** Keeps a connection to the server, reconnecting with backoff. Never returns. */
+  /** Keeps a connection to the server, reconnecting with backoff. Returns only when a newer runner replaced this one. */
   async connect(url: string, token: string, log = (s: string) => console.log(s)) {
     let delay = 1000;
     for (;;) {
-      await new Promise<void>((done) => {
+      const code = await new Promise<number>((done) => {
         const ws = new WebSocket(`${url.replace(/\/$/, "")}/runner?token=${encodeURIComponent(token)}`);
         ws.onopen = () => {
           delay = 1000;
@@ -222,12 +222,17 @@ export class Runner {
             /* ignore malformed */
           }
         };
-        ws.onclose = () => {
+        ws.onclose = (ev) => {
           this.send = () => {};
-          done();
+          done(ev.code);
         };
         ws.onerror = () => {};
       });
+      // 4000 = the server switched to a newer runner; reconnecting would just kick that one off again
+      if (code === 4000) {
+        log("another runner connected to this server; stopping this one");
+        return;
+      }
       log(`runner disconnected; retrying in ${delay / 1000}s`);
       await new Promise((r) => setTimeout(r, delay));
       delay = Math.min(delay * 2, 30_000);

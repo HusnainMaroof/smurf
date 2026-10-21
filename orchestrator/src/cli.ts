@@ -87,7 +87,8 @@ async function main() {
     const { Runner } = await import("./server/runner.ts");
     const token = flag("--token") || process.env.SMURF_TOKEN;
     if (!token) throw new Error("runner needs the server token: --token or SMURF_TOKEN");
-    return new Runner().connect(flag("--server") || process.env.SMURF_SERVER || "ws://127.0.0.1:47821", token);
+    await new Runner().connect(flag("--server") || process.env.SMURF_SERVER || "ws://127.0.0.1:47821", token);
+    process.exit(0); // replaced by a newer runner
   }
   const engine = new Engine();
   switch (cmd) {
