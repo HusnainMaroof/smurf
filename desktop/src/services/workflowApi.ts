@@ -94,27 +94,46 @@ export function graphToCompiler(id: string, g: Graph): CompilerWorkflow {
 
 /** Map a canvas/compiler workflow back onto the smurf-server graph shape. */
 export function compilerToGraph(w: CompilerWorkflow, base?: Graph): Graph {
+  const endNodeIds = new Set(w.nodes.filter((node) => node.type === 'end').map((node) => node.id));
+
   const nodes: GraphNode[] = w.nodes
-    .filter((node) => node.id !== 'start')
+    .filter((node) => node.id !== 'start' && node.type !== 'end')
     .map((node) => {
+      const b = base?.nodes.find((n) => n.id === node.id);
       const agent = String(node.data.agent);
-      const graphNode: GraphNode = { id: node.id, type: agent };
+      const dataAgent = node.data.agent;
+      const type =
+        typeof dataAgent === 'string' && dataAgent.length > 0 ? dataAgent : b?.type;
+      if (type === undefined) {
+        throw new Error(`Node ${node.id} has no Smurf node type`);
+      }
+      const graphNode: GraphNode = { id: node.id, type };
       const instruction = node.data.instruction;
       if (instruction !== undefined && instruction !== agent) {
         graphNode.name = String(instruction);
       }
       const params = node.data.params as Record<string, unknown> | undefined;
-      if (params && Object.keys(params).length > 0) {
+      if (params && typeof params === 'object' && Object.keys(params).length > 0) {
         graphNode.params = params;
+      } else if (b?.params) {
+        graphNode.params = b.params;
       }
       if (node.position) {
         graphNode.position = [Math.round(node.position.x), Math.round(node.position.y)];
+      } else if (b?.position) {
+        graphNode.position = b.position;
       }
       return graphNode;
     });
 
   const edges: GraphEdge[] = w.edges
-    .filter((edge) => edge.source !== 'start')
+    .filter(
+      (edge) =>
+        edge.source !== 'start' &&
+        edge.target !== 'start' &&
+        !endNodeIds.has(edge.source) &&
+        !endNodeIds.has(edge.target),
+    )
     .map((edge) => {
       const graphEdge: GraphEdge = { from: edge.source, to: edge.target };
       if (edge.data?.when !== undefined) {
@@ -123,10 +142,16 @@ export function compilerToGraph(w: CompilerWorkflow, base?: Graph): Graph {
       return graphEdge;
     });
 
+  const startEdgeTarget = w.edges.find((edge) => edge.source === 'start')?.target;
+  const start =
+    startEdgeTarget && startEdgeTarget !== 'start' && !endNodeIds.has(startEdgeTarget)
+      ? startEdgeTarget
+      : base?.start ?? nodes[0]?.id ?? '';
+
   return {
     name: w.name,
     description: w.description ?? base?.description,
-    start: w.edges.find((edge) => edge.source === 'start')?.target ?? base?.start ?? nodes[0]?.id ?? '',
+    start,
     nodes,
     edges,
   };
@@ -148,7 +173,7 @@ export async function loadTemplateWorkflow(_id: string): Promise<CompilerWorkflo
 }
 
 export async function loadUserWorkflow(id: string): Promise<CompilerWorkflow> {
-  const res = await serverFetch(`${BASE}/api/workflows/user/${id}`);
+  const res = await serverFetch(`${BASE}/api/workflows/user/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error(await parseError(res));
   const body = (await res.json()) as { graph: Graph };
   return graphToCompiler(id, body.graph);
@@ -159,10 +184,21 @@ export async function loadWorkflowById(id: string): Promise<CompilerWorkflow> {
 }
 
 export async function saveUserWorkflow(workflow: CompilerWorkflow): Promise<void> {
+  let base: Graph | undefined;
+  try {
+    const current = await serverFetch(`${BASE}/api/workflows/user/${encodeURIComponent(workflow.id)}`);
+    if (current.ok) {
+      base = ((await current.json()) as { graph?: Graph }).graph;
+    }
+  } catch {
+    // Unreachable server or unreadable body: save without a base graph.
+    base = undefined;
+  }
+
   const res = await serverFetch(`${BASE}/api/workflows/user/${encodeURIComponent(workflow.id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ graph: compilerToGraph(workflow) }),
+    body: JSON.stringify({ graph: compilerToGraph(workflow, base) }),
   });
   const body = (await res.json().catch(() => null)) as (ApiError & {
     status?: 'saved' | 'invalid';
