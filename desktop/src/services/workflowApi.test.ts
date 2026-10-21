@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { graphToCompiler, type Graph } from './workflowApi';
+import { compilerToGraph, graphToCompiler, type Graph } from './workflowApi';
 
 describe('graphToCompiler', () => {
   it('adds a start node with an edge to the graph start', () => {
@@ -62,5 +62,69 @@ describe('graphToCompiler', () => {
     const plain = workflow.edges.find((e) => e.source === 'a' && !e.data);
     expect(plain).toBeDefined();
     expect(plain?.target).toBe('b');
+  });
+});
+
+describe('compilerToGraph', () => {
+  it('round-trips a graph with a loop, human gate, params and positions', () => {
+    const graph: Graph = {
+      name: 'Approval loop',
+      description: 'Run, approve, retry',
+      start: 'work',
+      nodes: [
+        {
+          id: 'work',
+          type: 'agent.run',
+          name: 'Run agent',
+          params: { model: 'fast' },
+          position: [10, 20],
+        },
+        {
+          id: 'gate',
+          type: 'human.approval',
+          name: 'Approve result',
+          params: { timeoutMin: 5 },
+          position: [30, 40],
+        },
+      ],
+      edges: [
+        { from: 'work', to: 'gate' },
+        { from: 'gate', port: 'retry', to: 'work' },
+        { from: 'gate', port: 'approve', to: 'work' },
+      ],
+    };
+
+    expect(compilerToGraph(graphToCompiler('approval-loop', graph))).toEqual(graph);
+  });
+
+  it('detects start from the edge leaving the start node', () => {
+    const graph: Graph = {
+      name: 'Linear',
+      start: 'b',
+      nodes: [
+        { id: 'a', type: 'agent.run' },
+        { id: 'b', type: 'agent.run' },
+      ],
+      edges: [{ from: 'a', to: 'b' }],
+    };
+
+    const converted = compilerToGraph(graphToCompiler('linear', graph));
+
+    expect(converted.start).toBe('b');
+    expect(converted.nodes.map((node) => node.id)).toEqual(['a', 'b']);
+  });
+
+  it('falls back to the base start and then the first node when there is no start edge', () => {
+    const workflow = {
+      id: 'manual',
+      name: 'Manual',
+      version: 1,
+      nodes: [{ id: 'a', type: 'agent_task', data: { agent: 'agent.run' } }],
+      edges: [],
+    };
+    const base: Graph = { name: 'Base', start: 'base', nodes: [], edges: [] };
+
+    expect(compilerToGraph(workflow, base).start).toBe('base');
+    expect(compilerToGraph(workflow).start).toBe('a');
   });
 });

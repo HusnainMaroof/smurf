@@ -33,11 +33,11 @@ export type Graph = {
 
 type ApiError = { detail?: { message?: string; errors?: string[] } };
 
-async function parseError(response: Response): Promise<string> {
+async function parseError(response: Response, body?: ApiError): Promise<string> {
   try {
-    const body = (await response.json()) as ApiError;
-    const msg = body.detail?.message ?? 'Request failed';
-    const errs = body.detail?.errors?.join(', ') ?? '';
+    const parsed = body ?? ((await response.json()) as ApiError);
+    const msg = parsed.detail?.message ?? 'Request failed';
+    const errs = parsed.detail?.errors?.join(', ') ?? '';
     return errs ? `${msg}: ${errs}` : msg;
   } catch {
     return `HTTP ${response.status}`;
@@ -92,6 +92,46 @@ export function graphToCompiler(id: string, g: Graph): CompilerWorkflow {
   };
 }
 
+/** Map a canvas/compiler workflow back onto the smurf-server graph shape. */
+export function compilerToGraph(w: CompilerWorkflow, base?: Graph): Graph {
+  const nodes: GraphNode[] = w.nodes
+    .filter((node) => node.id !== 'start')
+    .map((node) => {
+      const agent = String(node.data.agent);
+      const graphNode: GraphNode = { id: node.id, type: agent };
+      const instruction = node.data.instruction;
+      if (instruction !== undefined && instruction !== agent) {
+        graphNode.name = String(instruction);
+      }
+      const params = node.data.params as Record<string, unknown> | undefined;
+      if (params && Object.keys(params).length > 0) {
+        graphNode.params = params;
+      }
+      if (node.position) {
+        graphNode.position = [Math.round(node.position.x), Math.round(node.position.y)];
+      }
+      return graphNode;
+    });
+
+  const edges: GraphEdge[] = w.edges
+    .filter((edge) => edge.source !== 'start')
+    .map((edge) => {
+      const graphEdge: GraphEdge = { from: edge.source, to: edge.target };
+      if (edge.data?.when !== undefined) {
+        graphEdge.port = edge.data.when;
+      }
+      return graphEdge;
+    });
+
+  return {
+    name: w.name,
+    description: w.description ?? base?.description,
+    start: w.edges.find((edge) => edge.source === 'start')?.target ?? base?.start ?? nodes[0]?.id ?? '',
+    nodes,
+    edges,
+  };
+}
+
 export async function fetchTemplateIds(): Promise<string[]> {
   return [];
 }
@@ -118,8 +158,20 @@ export async function loadWorkflowById(id: string): Promise<CompilerWorkflow> {
   return loadUserWorkflow(id);
 }
 
-export async function saveUserWorkflow(_workflow: CompilerWorkflow): Promise<void> {
-  throw new Error('Editing workflows from the app is not available yet; edit workflows/*.json');
+export async function saveUserWorkflow(workflow: CompilerWorkflow): Promise<void> {
+  const res = await serverFetch(`${BASE}/api/workflows/user/${encodeURIComponent(workflow.id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ graph: compilerToGraph(workflow) }),
+  });
+  const body = (await res.json().catch(() => null)) as (ApiError & {
+    status?: 'saved' | 'invalid';
+    problems?: string[];
+  }) | null;
+  if (body?.status === 'invalid') {
+    throw new Error('Workflow is invalid: ' + (body.problems ?? []).join('; '));
+  }
+  if (!res.ok) throw new Error(await parseError(res, body ?? undefined));
 }
 
 export async function validateWorkflow(_workflow: CompilerWorkflow): Promise<void> {
@@ -138,7 +190,7 @@ export async function listWorkflowItems(): Promise<WorkflowListItem[]> {
     id: graph.id ?? '',
     name: graph.name,
     source: 'user',
-    readOnly: true,
+    readOnly: false,
     description: graph.description,
   }));
 }
