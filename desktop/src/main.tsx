@@ -1,13 +1,14 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
+import { SmurfApp } from './smurf/SmurfApp.tsx';
 import { ServerGate } from './components/ServerGate';
 import './index.css';
+import './smurf/theme.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ServerGate>
-      <App />
+      <SmurfApp />
     </ServerGate>
   </StrictMode>,
 );
