@@ -96,6 +96,7 @@ export class Engine extends EventEmitter {
     if (input && s.waiting && !s.waiting.options.includes(input.choice)) throw new Error(`choice must be one of: ${s.waiting.options.join(", ")}`);
     s.input = input;
     s.status = "running";
+    s.error = undefined; // a resumed run starts clean; an old failure would otherwise be reported forever
     this.vault.event(id, "resume", { ...input });
     return this.loop(s, this.workflow(s.workflow));
   }
