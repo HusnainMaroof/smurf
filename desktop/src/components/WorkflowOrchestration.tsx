@@ -476,20 +476,17 @@ const edgeColors: Record<string, string> = {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || `flow-${Date.now()}`;
-    const empty: CompilerWorkflow = {
-      id: slug,
-      name: newWorkflowName.trim(),
-      version: 1,
-      nodes: [
-        { id: 'end', type: 'end', position: { x: 250, y: 120 }, data: { label: t('Finish') } },
-      ],
-      edges: [{ id: 'e1', source: 'start', target: 'end' }],
-      icon: 'workflow',
-      description: newWorkflowDesc.trim(),
-    };
     setIsSavingNewFlow(true);
     setCreateFlowError(null);
     try {
+      const base = await loadUserWorkflow('default');
+      const empty: CompilerWorkflow = {
+        ...base,
+        id: slug,
+        name: newWorkflowName.trim(),
+        description: newWorkflowDesc.trim(),
+        icon: 'workflow',
+      };
       await validateWorkflow(empty);
       await saveUserWorkflow(empty);
       setIsCreatingWorkflow(false);
