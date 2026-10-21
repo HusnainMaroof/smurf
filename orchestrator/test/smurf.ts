@@ -128,6 +128,9 @@ const log = (await api("GET", `/api/runs/${run_id}/logs/${worker.id}`)).body;
 assert.ok(log.size > 0 && log.text.includes("mock coder"), JSON.stringify(log));
 assert.equal((await api("GET", `/api/runs/${run_id}/logs/${worker.id}?offset=${log.offset}`)).body.text, "", "polling from the end returns nothing new");
 assert.equal((await api("GET", `/api/runs/${run_id}/logs/..%2F..%2Fstate`)).code, 404, "no path escape");
+const changes = (await api("GET", `/api/runs/${run_id}/agents/${worker.id}/diff`)).body;
+assert.deepEqual(changes.files.map((f: any) => f.path), ["math.js"], JSON.stringify(changes).slice(0, 300));
+assert.ok(changes.diff.includes("a + b"));
 
 sock.close();
 server.close();

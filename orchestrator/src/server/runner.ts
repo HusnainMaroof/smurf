@@ -105,6 +105,14 @@ export class Runner {
         return { agents: [] };
       }
     },
+    diff: ({ id, name }: Params) => {
+      // a worker attempt's changes as the engine recorded them (Runs/<id>/<task>-a<n>.diff)
+      if (!/^[\w.-]+$/.test(String(name))) throw new Error("bad agent id");
+      const file = path.join(this.engine.vault.runDir(String(id)), `${name}.diff`);
+      if (!fs.existsSync(file)) return { diff: "", files: [] };
+      const diff = fs.readFileSync(file, "utf8").slice(0, 400_000);
+      return { diff, files: parseDiff(diff).map((f) => ({ path: f.path, status: f.status })) };
+    },
     log: ({ id, name, offset }: Params) => {
       if (!/^[\w.-]+$/.test(String(name))) throw new Error("bad log name");
       const file = path.join(this.engine.vault.runDir(String(id)), "logs", `${name}.log`);
