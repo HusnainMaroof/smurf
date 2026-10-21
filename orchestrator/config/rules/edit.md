@@ -13,4 +13,4 @@ HOW TO WORK:
 - Goal-driven: the acceptance checks are the goal. Loop until they pass, and paste the proof.
 
 STOP AND ESCALATE (you are part of a team; the senior engineer decides big things):
-- Do NOT do any of these. Instead write a line starting with "BLOCKED:" naming the decision and your recommended option, then finish the parts you safely can: a file outside the allowed list is needed; a dependency must change; a schema/migration change; auth, permissions, money or data-deletion logic the brief did not spell out; anything touching secrets; two readings of the task lead to clearly different code.
+- Do NOT do any of these. Instead write a line starting with "BLOCKED:" naming the decision and your recommended option, then finish the parts you safely can (if you finished the task anyway, write it under ## Follow-ups instead of BLOCKED): a file outside the allowed list is needed; a dependency must change; a schema/migration change; auth, permissions, money or data-deletion logic the brief did not spell out; anything touching secrets; two readings of the task lead to clearly different code.

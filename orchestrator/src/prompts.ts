@@ -110,8 +110,8 @@ export function workerPrompt(o: {
     t.critique && last ? `CORRECTION (attempt ${t.attempts.length + 1}). Your previous attempt was rejected. Fix exactly these points, keep what was right:\n${t.critique}` : "",
     o.apiEdit ? `${FILE_PROTOCOL}\n\n${fileBodies}` : "",
     o.apiEdit
-      ? "REPORT: after the file blocks write: ## Assumptions, ## Changes (file: what and why), and a line starting with BLOCKED: for any decision you must escalate."
-      : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), and one line starting with BLOCKED: per decision you escalate.`,
+      ? "REPORT: after the file blocks write: ## Assumptions, ## Changes (file: what and why), one line starting with BLOCKED: only for a decision that stopped you from finishing, and ## Follow-ups for anything else worth doing later."
+      : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), one line starting with BLOCKED: only per decision that stopped you from finishing part of the task (never "BLOCKED: none"), and ## Follow-ups for suggestions or cleanups you did not need.`,
   ].filter(Boolean).join("\n\n");
 }
 
