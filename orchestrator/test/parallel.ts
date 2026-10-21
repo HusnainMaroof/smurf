@@ -71,6 +71,10 @@ const p3 = starts.find((m) => m.startsWith("task p3:"))!;
 assert.ok(!p3.includes("p1"), `p3 shares a.js with p1 and must wait for it: ${p3}`);
 assert.ok(starts.indexOf(starts.find((m) => m.startsWith("task p4:"))!) > starts.indexOf(starts.find((m) => m.startsWith("task p2:"))!), "p4 starts after its dependency");
 
+const prompt = fs.readFileSync(path.join(engine.vault.runDir(s.id), "logs", "p1-a1.prompt.txt"), "utf8");
+assert.match(prompt, /OTHER TASKS IN THIS RUN[\s\S]*- p2: edit b\.js \(files: b\.js\)/, "each worker knows what the others do");
+assert.ok(!/- p1: /.test(prompt.split("OTHER TASKS IN THIS RUN")[1]), "a task is not listed as its own sibling");
+
 for (const [file, want] of [["a.js", "A=3"], ["b.js", "B=2"], ["c.js", "C=2"]]) assert.match(git(repo, "show", `${s.integrationBranch}:${file}`).out, new RegExp(want), file);
 assert.equal(git(repo, "worktree", "list").out.split("\n").length, 1, "worktrees cleaned up");
 

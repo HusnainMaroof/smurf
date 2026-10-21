@@ -81,6 +81,14 @@ export function planPrompt(s: RunState, snapshot: string, agents: Record<string,
   ].filter(Boolean).join("\n\n");
 }
 
+/** Who does what in this run, so an agent neither does nor reports another task's part. */
+function otherTasks(s: RunState, t: Task): string {
+  const others = s.tasks.filter((x) => x.id !== t.id && x.status !== "skipped");
+  if (!others.length) return "";
+  const lines = others.map((x) => `- ${x.id}: ${x.title}${x.files.length ? ` (files: ${x.files.join(", ")})` : " (read-only)"}`);
+  return `OTHER TASKS IN THIS RUN (other agents do these, before, after or alongside you; do not do them and do not list them as follow-ups or BLOCKED):\n${lines.join("\n")}`;
+}
+
 export function workerPrompt(o: {
   s: RunState;
   t: Task;
@@ -108,14 +116,15 @@ export function workerPrompt(o: {
     `ALLOWED FILES:\n${t.files.map((f) => `- ${f}`).join("\n") || "- none (read-only task: change nothing)"}`,
     t.checks.length ? `ACCEPTANCE CHECKS (the engine runs these after you finish; run them yourself first if you can):\n${t.checks.map((c) => `- ${c.cmd}`).join("\n")}` : "",
     s.understanding ? `OVERALL GOAL (context only: other tasks cover the other parts; do only YOUR task, and do not report the other parts as BLOCKED): ${s.understanding.goal}` : "",
+    otherTasks(s, t),
     o.depReports.length ? `CONTEXT FROM EARLIER TASKS:\n${o.depReports.join("\n\n")}` : "",
     t.critique && last ? `CORRECTION (attempt ${t.attempts.length + 1}). Your previous attempt was rejected. Fix exactly these points, keep what was right:\n${t.critique}` : "",
     o.apiEdit ? `${FILE_PROTOCOL}\n\n${fileBodies}` : "",
     o.apiEdit
-      ? "REPORT: after the file blocks write: ## Assumptions, ## Changes (file: what and why), one line starting with BLOCKED: only for a decision that stopped you from finishing, and ## Follow-ups for anything else worth doing later."
+      ? "REPORT: after the file blocks write: ## Assumptions, ## Changes (file: what and why), one line starting with BLOCKED: only for a decision that stopped you from finishing, and ## Follow-ups for anything else worth doing later that no other task in this run covers."
       : profile.mode === "readonly"
         ? `REPORT: give your report as your final answer (read-only: do not create any file, not even a report file). Sections: ## Findings (one line each: file:line, severity, what), ## Details, ## Recommendation, one line starting with BLOCKED: only for a question that stopped you (never "BLOCKED: none"), and ## Follow-ups.`
-        : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), one line starting with BLOCKED: only per decision that stopped you from finishing part of the task (never "BLOCKED: none"), and ## Follow-ups for suggestions or cleanups you did not need.`,
+        : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), one line starting with BLOCKED: only per decision that stopped you from finishing part of the task (never "BLOCKED: none"), and ## Follow-ups for suggestions or cleanups you did not need that no other task in this run covers.`,
   ].filter(Boolean).join("\n\n");
 }
 
