@@ -1,4 +1,4 @@
-/** D20 — plain Clutch Agent busy message queue helpers. */
+/** D20 — plain Smurf Agent busy message queue helpers. */
 
 export interface PendingChatMessage {
   id: string;

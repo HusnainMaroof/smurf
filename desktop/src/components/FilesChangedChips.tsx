@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { LegacyIcon } from './ui/LegacyIcon';
 import { isImageWorkspacePath } from '../services/workspacePathLinks';
-import { workspaceMediaUrl } from '../services/sidecarUrl';
+import { workspaceMediaUrl } from '../services/serverUrl';
 
 /** Render chips inline up to this count; beyond it, collapse. */
 const COLLAPSE_THRESHOLD = 8;

@@ -291,7 +291,7 @@ export function StyleSelect({
         }}
       >
         <Palette size={14} />
-        <span>{selected ? t(selected.labelKey) : (placeholderLabel ?? t('Clutch'))}</span>
+        <span>{selected ? t(selected.labelKey) : (placeholderLabel ?? t('Smurf'))}</span>
         <ChevronDown
           size={12}
           className={`opacity-60 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}

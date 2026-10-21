@@ -56,7 +56,7 @@ export const SkillsRegistry: React.FC = () => {
       const packs = await fetchCapabilityPacks();
       setCapabilityPacks(packs);
     } catch {
-      setErrorMsg(t('Sidecar unavailable — cannot load skills registry.'));
+      setErrorMsg(t('Server unavailable — cannot load skills registry.'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export const SkillsRegistry: React.FC = () => {
       setScannedSkills(data.skills);
       notifySkillsUpdated();
     } catch {
-      setErrorMsg(t('Failed to update skill — Sidecar may be offline.'));
+      setErrorMsg(t('Failed to update skill — Server may be offline.'));
     }
   };
 
@@ -135,7 +135,7 @@ export const SkillsRegistry: React.FC = () => {
         isModalStyle
         icon="school"
         title={t('Global Skills Registry')}
-        description={t('Clutch Skills Registry applies to the built-in agent. CLI tabs show native skill directories (read-only).')}
+        description={t('Smurf Skills Registry applies to the built-in agent. CLI tabs show native skill directories (read-only).')}
       />
 
         <AgentCapabilityTabs activeTab={capabilityTab} onTabChange={setCapabilityTab} />

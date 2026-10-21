@@ -14,10 +14,10 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({ terminalLogs, isAc
         <span className="flex items-center gap-1.5">
           {isActive ? (
             <>
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> SIDECAR ACTIVE
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> SERVER ACTIVE
             </>
           ) : (
-            <>SIDECAR IDLE</>
+            <>SERVER IDLE</>
           )}
         </span>
         <button

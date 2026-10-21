@@ -13,13 +13,13 @@ vi.mock('./agentApi', () => ({
   saveAgents: vi.fn(),
 }));
 
-vi.mock('./sidecarUrl', () => ({
-  sidecarFetch: vi.fn(),
-  sidecarHttpUrl: (path: string) => path,
+vi.mock('./serverUrl', () => ({
+  serverFetch: vi.fn(),
+  serverHttpUrl: (path: string) => path,
 }));
 
 import { fetchAgents, saveAgents } from './agentApi';
-import { sidecarFetch } from './sidecarUrl';
+import { serverFetch } from './serverUrl';
 
 function tool(partial: Partial<AiToolStatus> & Pick<AiToolStatus, 'id' | 'name'>): AiToolStatus {
   return {
@@ -38,7 +38,7 @@ describe('agentProvisioning', () => {
   beforeEach(() => {
     vi.mocked(fetchAgents).mockReset();
     vi.mocked(saveAgents).mockReset();
-    vi.mocked(sidecarFetch).mockReset();
+    vi.mocked(serverFetch).mockReset();
   });
 
   it('dedupes by agentType (case-insensitive name)', () => {
@@ -71,7 +71,7 @@ describe('agentProvisioning', () => {
   });
 
   it('does not create Ollama agent when no local models', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
+    vi.mocked(serverFetch).mockResolvedValue({
       ok: true,
       json: async () => ({ ok: true, models: [] }),
     } as Response);
@@ -86,7 +86,7 @@ describe('agentProvisioning', () => {
   });
 
   it('creates agent when Ollama models exist', async () => {
-    vi.mocked(sidecarFetch).mockResolvedValue({
+    vi.mocked(serverFetch).mockResolvedValue({
       ok: true,
       json: async () => ({ ok: true, models: ['llama3'] }),
     } as Response);

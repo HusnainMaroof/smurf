@@ -1,4 +1,4 @@
-import type { DispatchLogEntry, DispatchPreviewPayload, PtyLane } from '@clutch/shared-types';
+import type { DispatchLogEntry, DispatchPreviewPayload, PtyLane } from '@smurf/shared-types';
 
 export const CLI_DISPLAY: Record<string, string> = {
   'claude-cli': 'Claude Code',

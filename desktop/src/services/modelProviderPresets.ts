@@ -1,6 +1,6 @@
 export type ModelKind = 'chat' | 'image' | 'video';
 
-/** Built-in providers — add API key only; models ship with Clutch. */
+/** Built-in providers — add API key only; models ship with Smurf. */
 export const BUILTIN_PROVIDER_IDS = [
   'deepseek',
   'anthropic',

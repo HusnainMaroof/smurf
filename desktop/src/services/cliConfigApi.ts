@@ -1,6 +1,6 @@
 import type { MainView } from '../types';
 import type { AgentCapabilityTabId } from './agentCapabilityTiers';
-import { SIDECAR_BASE as BASE, sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
 export const SETTINGS_AGENT_TAB_KEY = 'clutch.settings.agentCapabilityTab';
 
@@ -106,7 +106,7 @@ async function parseJson<T>(response: Response): Promise<T> {
 }
 
 export async function fetchCliModelsConfig(agentType: string): Promise<CliModelsScan> {
-  const response = await sidecarFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/models`);
+  const response = await serverFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/models`);
   return parseJson(response);
 }
 
@@ -115,7 +115,7 @@ export async function fetchCliSkillsConfig(agentType: string): Promise<{
   skills: CliSkillScanItem[];
   roots: string[];
 }> {
-  const response = await sidecarFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/skills`);
+  const response = await serverFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/skills`);
   return parseJson(response);
 }
 
@@ -125,7 +125,7 @@ export async function fetchCliMcpConfig(agentType: string): Promise<{
   cc_switch_found: boolean;
   cc_switch_cli_available: boolean;
 }> {
-  const response = await sidecarFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/mcp`);
+  const response = await serverFetch(`${BASE}/api/cli-config/${encodeURIComponent(agentType)}/mcp`);
   return parseJson(response);
 }
 
@@ -133,7 +133,7 @@ export async function activateCliProvider(
   agentType: string,
   providerId: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/cli-config/${encodeURIComponent(agentType)}/activate-provider`,
     {
       method: 'POST',
@@ -148,7 +148,7 @@ export async function activateCliModel(
   agentType: string,
   modelRef: string,
 ): Promise<{ ok: boolean; message: string }> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/cli-config/${encodeURIComponent(agentType)}/activate-model`,
     {
       method: 'POST',
@@ -162,7 +162,7 @@ export async function activateCliModel(
 export async function repairCliAgentConfig(
   agentType: string,
 ): Promise<{ ok: boolean; message: string; changes?: string[] }> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/cli-config/${encodeURIComponent(agentType)}/repair-settings`,
     { method: 'POST' },
   );
@@ -175,7 +175,7 @@ export async function installCcSwitchCli(): Promise<{
   cli_path?: string;
   method?: string;
 }> {
-  const response = await sidecarFetch(`${BASE}/api/cli-config/install-cc-switch-cli`, {
+  const response = await serverFetch(`${BASE}/api/cli-config/install-cc-switch-cli`, {
     method: 'POST',
   });
   return parseJson(response);
@@ -188,7 +188,7 @@ export async function prefetchCcSwitchCli(): Promise<{
   path?: string;
   message?: string;
 }> {
-  const response = await sidecarFetch(`${BASE}/api/cli-config/prefetch-cc-switch-cli`, {
+  const response = await serverFetch(`${BASE}/api/cli-config/prefetch-cc-switch-cli`, {
     method: 'POST',
   });
   return parseJson(response);

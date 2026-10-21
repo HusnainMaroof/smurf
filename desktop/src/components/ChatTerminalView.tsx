@@ -210,8 +210,8 @@ export const ChatTerminalView: React.FC<ChatTerminalViewProps> = ({
       : shellSessionStatus === 'queued_pool'
         ? t('Queued for shell...')
         : isActive
-          ? t('Receiving sidecar events')
-          : t('SIDECAR IDLE');
+          ? t('Receiving server events')
+          : t('SERVER IDLE');
 
   if (useLogFallback) {
     return (
@@ -265,7 +265,7 @@ export const ChatTerminalView: React.FC<ChatTerminalViewProps> = ({
             {t('Terminal console')}
           </p>
           <p className="text-[11px] text-on-surface-variant/80 truncate mt-0.5">
-            {activeAgentName || t('Clutch Agent')}
+            {activeAgentName || t('Smurf Agent')}
             {engineHint ? ` · ${engineHint}` : ''}
           </p>
         </div>

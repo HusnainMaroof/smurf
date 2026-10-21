@@ -40,7 +40,7 @@ import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { CONTENT_TOP_WITH_BANNER, SIDEBAR_COLLAPSED_WIDTH_PX, SIDEBAR_EXPANDED_WIDTH_PX, CHROME_PANEL_TOGGLE_TOP_CSS, CHROME_PANEL_TOGGLE_HALF_PX } from './constants/layout';
 import { ChromeEdgeToggle } from './components/ui/ChromeEdgeToggle';
 import { BrandLogo } from './components/BrandLogo';
-import { clutchMarkUrl } from './assets/brand';
+import { smurfMarkUrl } from './assets/brand';
 import { DevOnboardingToolsEmptyPreview } from './components/onboarding/DevOnboardingToolsEmptyPreview';
 import { fetchOnboardingState } from './services/onboardingApi';
 import { clutchStore, createSessionRunId, submitChatMessage, useClutchState, setUserChatAvatar, clearWorkflowForSession } from './services/clutchState';
@@ -102,7 +102,7 @@ import {
   isHtmlWorkspacePath,
   openPathInSystem,
 } from './services/openInSystem';
-import { workspaceMediaUrl } from './services/sidecarUrl';
+import { workspaceMediaUrl } from './services/serverUrl';
 import { pickWorkspaceFolder } from './services/pickWorkspaceFolder';
 import {
   fetchModelsConfig,
@@ -131,13 +131,13 @@ function MainLayout() {
   const hostOs = useHostOs();
   const isWindows = isWindowsHost(hostOs);
   const { state: clutchState } = useClutchState();
-  const [appVersion, setAppVersion] = useState<string>('1.0.0');
+  const [appVersion, setAppVersion] = useState<string>('0.1.0');
 
   useEffect(() => {
     if (isTauri()) {
       getVersion()
         .then((v) => setAppVersion(v))
-        .catch((err) => console.warn('[Clutch] Failed to fetch app version:', err));
+        .catch((err) => console.warn('[Smurf] Failed to fetch app version:', err));
     }
   }, []);
 
@@ -699,7 +699,7 @@ function MainLayout() {
       setSessions(runs);
       setShellSnapshotRunIds(new Set(snapshots.map((snap) => snap.run_id)));
     } catch (error: unknown) {
-      console.warn('[Clutch] sessions unavailable:', error);
+      console.warn('[Smurf] sessions unavailable:', error);
     }
   }, [appMode]);
 
@@ -756,7 +756,7 @@ function MainLayout() {
       workflow_id: opts?.workflowId ?? clutchState.workflow_id ?? '',
       mode,
     }).catch((error) => {
-      console.warn('[Clutch] session register failed:', error);
+      console.warn('[Smurf] session register failed:', error);
     });
     void refreshSessions(mode);
   }, [upsertLocalSession, clutchState.workflow_id, t, refreshSessions]);
@@ -806,7 +806,7 @@ function MainLayout() {
         await saveModelsConfig({ active_model_id: modelId });
         await syncModelsConfig();
       } catch (error) {
-        console.error('[Clutch] deferred model switch failed:', error);
+        console.error('[Smurf] deferred model switch failed:', error);
         setWorkspacePickError(
           error instanceof Error ? error.message : t('Failed to switch model.'),
         );
@@ -943,7 +943,7 @@ function MainLayout() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Workspace authorize failed';
       setWorkspacePickError(message);
-      console.error('[Clutch] workspace authorize failed:', error);
+      console.error('[Smurf] workspace authorize failed:', error);
     }
   };
 
@@ -955,7 +955,7 @@ function MainLayout() {
       await refreshWorkspaceFiles();
       await refreshWorkspaceGit();
     } catch (error) {
-      console.error('[Clutch] workspace switch failed:', error);
+      console.error('[Smurf] workspace switch failed:', error);
     }
   };
 
@@ -973,7 +973,7 @@ function MainLayout() {
           const group = await createRepositoryGroup(name.trim());
           setRepositoryGroups((current) => [...current, group]);
         } catch (error) {
-          console.error('[Clutch] create repository group failed:', error);
+          console.error('[Smurf] create repository group failed:', error);
         }
       }
     });
@@ -986,7 +986,7 @@ function MainLayout() {
         current.map((group) => (group.id === groupId ? updated : group)),
       );
     } catch (error) {
-      console.error('[Clutch] update repository group failed:', error);
+      console.error('[Smurf] update repository group failed:', error);
     }
   };
 
@@ -1003,7 +1003,7 @@ function MainLayout() {
           const listed = await fetchRepositoryGroups();
           setRepositoryGroups(listed.groups);
         } catch (error) {
-          console.error('[Clutch] delete repository group failed:', error);
+          console.error('[Smurf] delete repository group failed:', error);
         }
       }
     });
@@ -1028,7 +1028,7 @@ function MainLayout() {
             current.map((g) => (g.id === groupId ? updated : g))
           );
         } catch (error) {
-          console.error('[Clutch] rename repository group failed:', error);
+          console.error('[Smurf] rename repository group failed:', error);
         }
       }
     });
@@ -1068,7 +1068,7 @@ function MainLayout() {
       const listed = await fetchRepositoryGroups();
       setRepositoryGroups(listed.groups);
     } catch (error) {
-      console.error('[Clutch] move workspace to group failed:', error);
+      console.error('[Smurf] move workspace to group failed:', error);
       const listed = await fetchRepositoryGroups();
       setRepositoryGroups(listed.groups);
     }
@@ -1122,7 +1122,7 @@ function MainLayout() {
         plain: isLargePreviewContent(content),
       });
     } catch (error) {
-      console.error('[Clutch] read file failed:', error);
+      console.error('[Smurf] read file failed:', error);
       setPreviewToast(`Could not open: ${path}`);
       window.setTimeout(() => setPreviewToast(null), 3200);
     }
@@ -1323,7 +1323,7 @@ function MainLayout() {
         await saveModelsConfig({ active_model_id: modelId });
         await syncModelsConfig();
       } catch (error) {
-        console.error('[Clutch] model switch failed:', error);
+        console.error('[Smurf] model switch failed:', error);
         setWorkspacePickError(
           error instanceof Error ? error.message : t('Failed to switch model.'),
         );
@@ -1447,7 +1447,7 @@ function MainLayout() {
           }
           await syncModelsConfig();
         } catch (error) {
-          console.warn('[Clutch] reset default text model on new chat failed:', error);
+          console.warn('[Smurf] reset default text model on new chat failed:', error);
         }
       })();
       void clutchStore.connect(runId);
@@ -1502,7 +1502,7 @@ function MainLayout() {
       mode: 'design',
       status: 'idle',
     }).catch((error) => {
-      console.warn('[Clutch] design session register failed:', error);
+      console.warn('[Smurf] design session register failed:', error);
     });
     void refreshSessions('design');
   };
@@ -1705,7 +1705,7 @@ function MainLayout() {
           hydratedState = normalizeTerminalSessionForResume(state);
           clutchStore.setPendingHydrate(hydratedState);
         } catch (error) {
-          console.warn('[Clutch] session state hydrate failed:', error);
+          console.warn('[Smurf] session state hydrate failed:', error);
         }
       }
 
@@ -1812,7 +1812,7 @@ function MainLayout() {
 
           await refreshSessions();
         } catch (error) {
-          console.error('[Clutch] remove workspace failed:', error);
+          console.error('[Smurf] remove workspace failed:', error);
         }
       }
     });
@@ -1855,7 +1855,7 @@ function MainLayout() {
             }
           }
         } catch (error) {
-          console.error('[Clutch] delete session failed:', error);
+          console.error('[Smurf] delete session failed:', error);
         }
       }
     });
@@ -1879,7 +1879,7 @@ function MainLayout() {
         configuredAgents,
       );
       void submitChatMessage(text, mentionAgentId ?? clutchState.refine_agent_id ?? undefined).catch((error) => {
-        console.error('[Clutch] refine message failed:', error);
+        console.error('[Smurf] refine message failed:', error);
       });
       return;
     }
@@ -1930,7 +1930,7 @@ function MainLayout() {
             ...clutchStore.getSnapshot(),
             status: 'failed',
           });
-          console.error('[Clutch] workflow start failed:', error);
+          console.error('[Smurf] workflow start failed:', error);
         }
       })();
       return;
@@ -1963,7 +1963,7 @@ function MainLayout() {
       sendingBoundModelId ? undefined : sendingModelId || undefined,
       clientMessageId,
     ).catch((error) => {
-      console.error('[Clutch] chat message failed:', error);
+      console.error('[Smurf] chat message failed:', error);
       setWorkspacePickError(
         error instanceof Error ? error.message : t('Failed to send message.'),
       );
@@ -2600,11 +2600,11 @@ function MainLayout() {
                     data-testid="footer-agent-trigger"
                     className={`${FOOTER_CHIP_CLASS} text-on-surface-variant cursor-default opacity-70`}
                     title={t('Design uses the Model LLM, not CLI agents')}
-                    aria-label={`${t('Agent')}: ${t('Clutch Agent')}`}
+                    aria-label={`${t('Agent')}: ${t('Smurf Agent')}`}
                   >
                     <LegacyIcon name="smart_toy" className="text-[15px] shrink-0" />
                     <FooterFieldLabel>{t('Agent')}</FooterFieldLabel>
-                    <FooterFieldValue>{t('Clutch Agent')}</FooterFieldValue>
+                    <FooterFieldValue>{t('Smurf Agent')}</FooterFieldValue>
                   </span>
                 ) : (
                   <>
@@ -2721,11 +2721,11 @@ function MainLayout() {
               data-testid="footer-agent-trigger"
               className={`${FOOTER_CHIP_CLASS} text-on-surface-variant cursor-default opacity-70`}
               title={t('Design uses the Model LLM, not CLI agents')}
-              aria-label={`${t('Agent')}: ${t('Clutch Agent')}`}
+              aria-label={`${t('Agent')}: ${t('Smurf Agent')}`}
             >
               <LegacyIcon name="smart_toy" className="text-[15px] shrink-0" />
               <FooterFieldLabel>{t('Agent')}</FooterFieldLabel>
-              <FooterFieldValue>{t('Clutch Agent')}</FooterFieldValue>
+              <FooterFieldValue>{t('Smurf Agent')}</FooterFieldValue>
             </span>
           ) : (
             <div className="relative min-w-0">
@@ -2776,14 +2776,14 @@ function MainLayout() {
           data-testid="footer-app-brand"
         >
           <BrandLogo
-            src={clutchMarkUrl}
+            src={smurfMarkUrl}
             alt=""
             rounded="none"
-            className="w-3.5 h-3.5 rounded-sm flex items-center justify-center flex-shrink-0 bg-black"
+            className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0"
             imgClassName="w-full h-full object-cover block"
           />
           <span>
-            <span className="@max-[32rem]/footer:hidden">Clutch </span>v{appVersion}
+            <span className="@max-[32rem]/footer:hidden">Smurf </span>v{appVersion}
           </span>
         </div>
       {promptModal && (

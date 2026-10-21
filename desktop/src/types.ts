@@ -1,4 +1,4 @@
-import type { ChatMessage as SharedChatMessage } from '@clutch/shared-types';
+import type { ChatMessage as SharedChatMessage } from '@smurf/shared-types';
 
 export type {
   AgentRole,
@@ -51,7 +51,7 @@ export type {
   WorkflowNodeType,
   WorkflowStep,
   EdgeWhen,
-} from '@clutch/shared-types';
+} from '@smurf/shared-types';
 
 export interface Deliverable {
   name: string;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 
+import { SmurfMark } from '../../BrandLogo';
 import { useLanguage } from '../../LanguageContext';
 import { pollHealth } from '../../../services/onboardingApi';
 import {
@@ -27,12 +28,12 @@ const REQUIREMENT_LABELS: Record<EnvRequirementId, string> = {
 const ENV_HINTS: Record<EnvRequirementId, Record<EnvCheckTier, string>> = {
   os: {
     ok: 'Your operating system meets our recommendation.',
-    warn: 'Unsupported or less-tested operating system detected — Clutch may still run, but packaging support is limited.',
+    warn: 'Unsupported or less-tested operating system detected — Smurf may still run, but packaging support is limited.',
     info: 'Could not verify the operating system version. macOS 14+ or Windows 10/11 x64 is recommended.',
   },
   arch: {
     ok: 'Recommended architecture detected for this package.',
-    warn: 'Less-tested CPU architecture detected — Clutch may still run, but this package is optimized for Apple Silicon or Windows x64.',
+    warn: 'Less-tested CPU architecture detected — Smurf may still run, but this package is optimized for Apple Silicon or Windows x64.',
     info: 'Architecture could not be fully verified. Windows ARM may run the x64 build through emulation.',
   },
   disk: {
@@ -46,7 +47,7 @@ const ENV_HINTS: Record<EnvRequirementId, Record<EnvCheckTier, string>> = {
     info: 'Network probe was inconclusive. If your browser can access your model provider, you can continue.',
   },
   installer: {
-    ok: 'Clutch is running — installer advisory passed.',
+    ok: 'Smurf is running — installer advisory passed.',
     warn: '—',
     info: 'If macOS Gatekeeper or Windows SmartScreen blocks launch, verify the package source and see INSTALL.md.',
   },
@@ -108,7 +109,7 @@ export function WelcomeStep({ onHealthyChange }: WelcomeStepProps) {
     setEnvChecks(env);
     setHealthy(result.ok);
     if (!result.ok) {
-      setError(result.message ?? t('Sidecar not ready'));
+      setError(result.message ?? t('Server not ready'));
     }
     setChecking(false);
   };
@@ -131,7 +132,7 @@ export function WelcomeStep({ onHealthyChange }: WelcomeStepProps) {
       }
       if (!cancelled) {
         setHealthy(false);
-        setError(t('Sidecar not ready'));
+        setError(t('Server not ready'));
         setChecking(false);
       }
     };
@@ -149,11 +150,9 @@ export function WelcomeStep({ onHealthyChange }: WelcomeStepProps) {
 
   return (
     <div className="space-y-6 text-center">
-      <div className="mx-auto h-14 w-14 rounded-2xl bg-neutral-900 text-white flex items-center justify-center text-xl font-bold">
-        C
-      </div>
+      <SmurfMark className="mx-auto h-14 w-14" />
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">{t('Welcome to Clutch')}</h1>
+        <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">{t('Welcome to Smurf')}</h1>
         <p className="mt-2 text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
           {t('Local AI multi-agent orchestration for developers — supervise workflows, not black boxes.')}
         </p>
@@ -178,7 +177,7 @@ export function WelcomeStep({ onHealthyChange }: WelcomeStepProps) {
         )}
         {hasEnvWarnings ? (
           <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
-            {t('Yellow items are recommendations only — not blockers. You can continue once Sidecar is ready.')}
+            {t('Yellow items are recommendations only — not blockers. You can continue once Server is ready.')}
           </p>
         ) : null}
       </div>
@@ -187,16 +186,16 @@ export function WelcomeStep({ onHealthyChange }: WelcomeStepProps) {
         {checking ? (
           <p className="text-xs text-neutral-500 flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {t('Waiting for Clutch sidecar…')}
+            {t('Waiting for smurf-server…')}
           </p>
         ) : healthy ? (
           <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-            {t('Sidecar ready')}
+            {t('Server ready')}
           </p>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-              {error ?? t('Sidecar not ready')}
+              {error ?? t('Server not ready')}
             </p>
             <p className="text-[10px] text-neutral-500">{t('See INSTALL.md §8 for troubleshooting')}</p>
             <button type="button" onClick={() => void check()} className={`${BTN_GHOST} text-[11px]`}>

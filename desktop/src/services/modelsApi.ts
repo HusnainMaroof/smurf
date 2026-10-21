@@ -1,4 +1,4 @@
-import { SIDECAR_BASE as BASE, sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 import { AGNES_BUILTIN_MODEL_ID } from './modelProviderPresets';
 
 export interface ModelEntry {
@@ -52,15 +52,15 @@ export class ModelsConfigError extends Error {
 export async function fetchModelsConfig(): Promise<ModelConfig> {
   let response: Response;
   try {
-    response = await sidecarFetch(`${BASE}/api/models/config`, { cache: 'no-store' });
+    response = await serverFetch(`${BASE}/api/models/config`, { cache: 'no-store' });
   } catch {
-    throw new ModelsConfigError('unreachable', 'sidecar unreachable');
+    throw new ModelsConfigError('unreachable', 'server unreachable');
   }
   if (response.status === 401) {
-    throw new ModelsConfigError('unauthorized', 'sidecar unauthorized');
+    throw new ModelsConfigError('unauthorized', 'server unauthorized');
   }
   if (response.status >= 500) {
-    throw new ModelsConfigError('server', `sidecar server error (${response.status})`);
+    throw new ModelsConfigError('server', `server server error (${response.status})`);
   }
   if (!response.ok) {
     throw new ModelsConfigError('other', `models config failed (${response.status})`);
@@ -73,7 +73,7 @@ export async function saveModelsConfig(payload: {
   provider_id?: string;
   api_key?: string;
 }): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/models/config`, {
+  const response = await serverFetch(`${BASE}/api/models/config`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -85,7 +85,7 @@ export async function saveModelsConfig(payload: {
 }
 
 export async function deleteProviderCredential(providerId: string): Promise<void> {
-  const response = await sidecarFetch(`${BASE}/api/models/credentials/${encodeURIComponent(providerId)}`, {
+  const response = await serverFetch(`${BASE}/api/models/credentials/${encodeURIComponent(providerId)}`, {
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -95,7 +95,7 @@ export async function deleteProviderCredential(providerId: string): Promise<void
 }
 
 export async function fetchProviderApiKey(providerId: string): Promise<string | null> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/models/credentials/${encodeURIComponent(providerId)}`,
     { cache: 'no-store' },
   );
@@ -116,7 +116,7 @@ export interface CcSwitchRehydrateResult {
 }
 
 export async function rehydrateCcSwitchModels(): Promise<CcSwitchRehydrateResult> {
-  const response = await sidecarFetch(`${BASE}/api/models/rehydrate-cc-switch`, { method: 'POST' });
+  const response = await serverFetch(`${BASE}/api/models/rehydrate-cc-switch`, { method: 'POST' });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { detail?: { message?: string } };
     throw new Error(body.detail?.message ?? `cc-switch rehydrate failed (${response.status})`);
@@ -125,7 +125,7 @@ export async function rehydrateCcSwitchModels(): Promise<CcSwitchRehydrateResult
 }
 
 export async function testModelConnection(modelId: string): Promise<ModelTestResult> {
-  const response = await sidecarFetch(`${BASE}/api/models/test`, {
+  const response = await serverFetch(`${BASE}/api/models/test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model_id: modelId }),
@@ -154,7 +154,7 @@ export interface AddCustomChatModelInput {
 export async function addCustomChatModel(
   input: AddCustomChatModelInput,
 ): Promise<{ model_id: string; config: ModelConfig }> {
-  const response = await sidecarFetch(`${BASE}/api/models/custom/chat`, {
+  const response = await serverFetch(`${BASE}/api/models/custom/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -178,7 +178,7 @@ export interface AddCustomVideoModelInput {
 export async function addCustomImageModel(
   input: AddCustomImageModelInput,
 ): Promise<{ model_id: string; config: ModelConfig }> {
-  const response = await sidecarFetch(`${BASE}/api/models/custom/image`, {
+  const response = await serverFetch(`${BASE}/api/models/custom/image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -193,7 +193,7 @@ export async function addCustomImageModel(
 export async function addCustomVideoModel(
   input: AddCustomVideoModelInput,
 ): Promise<{ model_id: string; config: ModelConfig }> {
-  const response = await sidecarFetch(`${BASE}/api/models/custom/video`, {
+  const response = await serverFetch(`${BASE}/api/models/custom/video`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -216,7 +216,7 @@ export async function updateCustomModel(
   modelId: string,
   input: UpdateCustomModelInput,
 ): Promise<ModelConfig> {
-  const response = await sidecarFetch(`${BASE}/api/models/custom/${encodeURIComponent(modelId)}`, {
+  const response = await serverFetch(`${BASE}/api/models/custom/${encodeURIComponent(modelId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -230,7 +230,7 @@ export async function updateCustomModel(
 }
 
 export async function deleteCustomModel(modelId: string): Promise<ModelConfig> {
-  const response = await sidecarFetch(`${BASE}/api/models/custom/${encodeURIComponent(modelId)}`, {
+  const response = await serverFetch(`${BASE}/api/models/custom/${encodeURIComponent(modelId)}`, {
     method: 'DELETE',
     cache: 'no-store',
   });
@@ -254,7 +254,7 @@ export async function fetchOpencodeZenModels(): Promise<{
   models: OpencodeZenModelOption[];
   message?: string;
 }> {
-  const response = await sidecarFetch(`${BASE}/api/models/opencode-zen/list`, {
+  const response = await serverFetch(`${BASE}/api/models/opencode-zen/list`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),

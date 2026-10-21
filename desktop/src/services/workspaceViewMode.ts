@@ -16,7 +16,7 @@ export function saveWorkspaceViewMode(mode: WorkspaceViewMode): void {
   localStorage.setItem(STORAGE_KEY, mode);
 }
 
-/** Any connected CLI agent type (not Clutch built-in LLM) supports embedded terminal mode. */
+/** Any connected CLI agent type (not Smurf built-in LLM) supports embedded terminal mode. */
 export function isTerminalCapableAgentType(agentType: string | null | undefined): boolean {
   return isCliAgentType(agentType);
 }

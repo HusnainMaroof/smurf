@@ -26,7 +26,7 @@ export const WorkflowJsonPanel: React.FC<WorkflowJsonPanelProps> = ({
             {t("Execution JSON Format")}
           </p>
           <p className="text-[10px] text-on-surface-variant mt-1 leading-relaxed max-w-xl">
-            {t("Edit complex flows (checks, approvals, branches, loops) here; schema will be verified by Sidecar before saving.")}
+            {t("Edit complex flows (checks, approvals, branches, loops) here; schema will be verified by Server before saving.")}
           </p>
         </div>
         {hint && (

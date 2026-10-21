@@ -16,7 +16,7 @@ export function PermissionsStep({ mode, onModeChange }: PermissionsStepProps) {
       <div className="text-center">
         <h2 className="text-xl font-bold text-neutral-900">{t('Permission mode')}</h2>
         <p className="mt-2 text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
-          {t('Choose how Clutch Agent may edit files and run tools. You can change this anytime in chat.')}
+          {t('Choose how Smurf Agent may edit files and run tools. You can change this anytime in chat.')}
         </p>
       </div>
 

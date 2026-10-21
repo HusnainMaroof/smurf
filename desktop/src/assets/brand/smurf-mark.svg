@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Smurf">
+  <title>Smurf</title>
+  <defs>
+    <linearGradient id="smurf-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2F6BFF"/>
+      <stop offset="1" stop-color="#1A3FB8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#smurf-bg)"/>
+  <path transform="translate(0 -16)" d="M338 176c-16-26-46-42-84-42c-50 0-86 27-86 66c0 40 34 56 88 68c56 12 92 28 92 72c0 42-38 70-92 70c-44 0-78-18-94-48"
+        fill="none" stroke="#FFFFFF" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

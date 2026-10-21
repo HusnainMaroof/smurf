@@ -3,8 +3,8 @@
 import type { Agent } from '../types';
 import { agentTypeFromAgent, isClutchAgentType, CLUTCH_AGENT_TYPE, type AgentTypeId } from './agentTypes';
 
-import { clutchMarkUrl } from '../assets/brand';
-export { clutchMarkUrl };
+import { smurfMarkUrl } from '../assets/brand';
+export { smurfMarkUrl };
 import chatgptLogo from '../assets/tool-logos/chatgpt.svg';
 import aiderLogo from '../assets/tool-logos/aider.svg';
 import antigravityLogo from '../assets/tool-logos/antigravity.svg';
@@ -149,10 +149,10 @@ export function resolveBrandLogoSrc(params: {
   agent?: Pick<Agent, 'agentType' | 'aiEngine'> | null;
 }): string | undefined {
   if (params.agent && isClutchAgentType(params.agent)) {
-    return clutchMarkUrl;
+    return smurfMarkUrl;
   }
   if (params.agentType?.trim() === CLUTCH_AGENT_TYPE) {
-    return clutchMarkUrl;
+    return smurfMarkUrl;
   }
   const candidates = [
     params.toolId,

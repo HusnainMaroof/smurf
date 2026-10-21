@@ -19,7 +19,7 @@ export function WorkspaceStep({ workspace, onWorkspaceSelected }: WorkspaceStepP
 
   const handlePick = async () => {
     if (!isTauri()) {
-      setError(t('Use Clutch.app to complete first-time setup'));
+      setError(t('Use the Smurf desktop app to complete first-time setup'));
       return;
     }
     setPicking(true);
@@ -41,13 +41,13 @@ export function WorkspaceStep({ workspace, onWorkspaceSelected }: WorkspaceStepP
       <div className="text-center">
         <h2 className="text-xl font-bold text-neutral-900">{t('Choose your workspace')}</h2>
         <p className="mt-2 text-sm text-neutral-500 max-w-md mx-auto">
-          {t('Clutch reads and writes only inside the project folder you authorize.')}
+          {t('Smurf reads and writes only inside the project folder you authorize.')}
         </p>
       </div>
 
       {!isTauri() && (
         <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
-          {t('Use Clutch.app to complete first-time setup')}
+          {t('Use the Smurf desktop app to complete first-time setup')}
         </p>
       )}
 

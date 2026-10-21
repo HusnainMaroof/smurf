@@ -113,7 +113,7 @@ export function ToolsStep({
       onToolsReady(ready);
     } catch {
       setTools([]);
-      setError(t('Sidecar unavailable — start the orchestrator'));
+      setError(t('Server unavailable — start the orchestrator'));
     } finally {
       setLoading(false);
     }

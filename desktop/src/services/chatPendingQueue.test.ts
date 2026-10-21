@@ -9,7 +9,7 @@ import {
 } from './chatPendingQueue';
 
 describe('chatPendingQueue (D20)', () => {
-  it('enqueues only while plain Clutch Agent is running', () => {
+  it('enqueues only while plain Smurf Agent is running', () => {
     expect(shouldEnqueueAgentMessage(true, true)).toBe(true);
     expect(shouldEnqueueAgentMessage(true, false)).toBe(false);
     expect(shouldEnqueueAgentMessage(false, true)).toBe(false);

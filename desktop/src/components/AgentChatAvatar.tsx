@@ -1,4 +1,4 @@
-import { clutchMarkUrl } from '../assets/brand';
+import { smurfMarkUrl } from '../assets/brand';
 import { LegacyIcon } from './ui/LegacyIcon';
 
 export function AgentChatAvatar({
@@ -15,13 +15,13 @@ export function AgentChatAvatar({
   return (
     <div
       className={`${className} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center ${
-        src === clutchMarkUrl ? 'bg-black' : 'bg-surface-container'
+        src === smurfMarkUrl ? 'bg-transparent' : 'bg-surface-container'
       } border border-outline-variant/30`}
     >
       {src ? (
         <img
           className={
-            src === clutchMarkUrl
+            src === smurfMarkUrl
               ? 'w-full h-full object-cover'
               : 'w-full h-full object-contain p-0.5'
           }

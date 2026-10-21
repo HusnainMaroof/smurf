@@ -11,7 +11,7 @@ import { HandoffPreviewModal } from './HandoffPreviewModal';
 import { TerminalSessionCommandCard } from './TerminalSessionCommandCard';
 import { renderChatMarkdown } from '../chatContentRender';
 import { extractImagePathsFromDispatch, isImageWorkspacePath } from '../../services/workspacePathLinks';
-import { workspaceMediaUrl } from '../../services/sidecarUrl';
+import { workspaceMediaUrl } from '../../services/serverUrl';
 
 interface MentionableAgent {
   id: string;

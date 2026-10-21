@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
-import { sidecarAuthedHttpUrl } from '../../../services/sidecarUrl';
+import { serverAuthedHttpUrl } from '../../../services/serverUrl';
 import {
   deviceView,
   ensureCharset,
@@ -31,7 +31,7 @@ export function UiCardNode({ data, selected }: NodeProps) {
       setResolvedPreviewSrc(null);
       return;
     }
-    void sidecarAuthedHttpUrl(d.previewSrc).then((url) => {
+    void serverAuthedHttpUrl(d.previewSrc).then((url) => {
       if (!cancelled) setResolvedPreviewSrc(url);
     });
     return () => {

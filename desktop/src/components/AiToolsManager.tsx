@@ -38,7 +38,7 @@ export default function AiToolsManager({ isModalStyle }: AiToolsManagerProps) {
       setTools(list);
     } catch {
       setTools([]);
-      setError(t('Sidecar unavailable — start the orchestrator to scan local tools.'));
+      setError(t('Server unavailable — start the orchestrator to scan local tools.'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export default function AiToolsManager({ isModalStyle }: AiToolsManagerProps) {
       await connectTool(id);
       await refresh();
     } catch {
-      setError('Failed to connect tool. Ensure the CLI is installed and Sidecar is running.');
+      setError('Failed to connect tool. Ensure the CLI is installed and Server is running.');
     } finally {
       setPendingId(null);
     }
@@ -98,7 +98,7 @@ export default function AiToolsManager({ isModalStyle }: AiToolsManagerProps) {
         isModalStyle={isModalStyle}
         icon="handyman"
         title={t('AI Tools Integration')}
-        description={t('Detected local AI CLIs on this machine. Connect only tools you want Clutch to route to.')}
+        description={t('Detected local AI CLIs on this machine. Connect only tools you want Smurf to route to.')}
         descriptionSecondary={t('Install guides below list tested CLIs only; other whitelist tools appear here once installed.')}
         actions={
           <button

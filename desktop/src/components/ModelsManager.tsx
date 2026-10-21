@@ -178,14 +178,14 @@ export const ModelsManager: React.FC<ModelsManagerProps> = ({
       setProviders({});
       if (err instanceof ModelsConfigError) {
         if (err.kind === 'unauthorized') {
-          setError(t('Sidecar session expired — quit Clutch (Cmd+Q) and reopen the app.'));
+          setError(t('Server rejected the token — update it in Settings → Server connection.'));
         } else if (err.kind === 'server') {
-          setError(t('Sidecar backend error — quit Clutch (Cmd+Q) and reopen the app.'));
+          setError(t('smurf-server returned an error — check the server logs.'));
         } else {
-          setError(t('Cannot reach Clutch sidecar — start the backend on port 8124 (dev) or reopen the packaged app.'));
+          setError(t('Cannot reach smurf-server — check that it is running (default port 47821).'));
         }
       } else {
-        setError(t('Cannot reach Clutch sidecar — start the backend on port 8124 (dev) or reopen the packaged app.'));
+        setError(t('Cannot reach smurf-server — check that it is running (default port 47821).'));
       }
       return [];
     } finally {
@@ -667,7 +667,7 @@ export const ModelsManager: React.FC<ModelsManagerProps> = ({
         isModalStyle
         icon="layers"
         title={t('Models by Agent')}
-        description={t('Clutch models power the built-in agent. CLI tabs show each tool native model configuration.')}
+        description={t('Smurf models power the built-in agent. CLI tabs show each tool native model configuration.')}
         actions={
           capabilityTab === 'clutch' ? (
             <div className="flex flex-shrink-0 gap-2">
@@ -940,7 +940,7 @@ export const ModelsManager: React.FC<ModelsManagerProps> = ({
 
           <div className="pt-2 text-center space-y-2">
             <p className="text-[11px] text-on-surface-variant">
-              {t('Import CC Switch providers into Clutch (built-in agent credentials only).')}{' '}
+              {t('Import CC Switch providers into Smurf (built-in agent credentials only).')}{' '}
               <button
                 type="button"
                 disabled={syncingCcSwitch}
@@ -1098,7 +1098,7 @@ export const ModelsManager: React.FC<ModelsManagerProps> = ({
               {activeModal.type === 'edit-key' && (
                 <form id="models-edit-key-form" onSubmit={(e) => void handleConnectProvider(e)} className="space-y-4">
                   <p className="text-[11px] text-on-surface-variant">
-                    {t('Saved in Clutch and used for built-in models of this provider.')}
+                    {t('Saved in Smurf and used for built-in models of this provider.')}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">

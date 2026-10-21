@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { translateText, type Language } from '../components/LanguageContext';
 import { mergeDispatchLogs } from './terminalOrchestraUtils';
-import { sidecarWebSocketUrl } from './sidecarUrl';
+import { serverWebSocketUrl } from './serverUrl';
 import defaultAvatar from '../assets/default_avatar.jpg';
 import {
   createSessionRunId,
@@ -485,7 +485,7 @@ class ClutchStateStore {
     this.replaceState(remote);
   };
 
-  /** Poll Sidecar HTTP state while a background plain-chat turn may still be running. */
+  /** Poll Server HTTP state while a background plain-chat turn may still be running. */
   scheduleBackgroundHydrate = (
     runId: string,
     fetchState: (id: string) => Promise<ClutchState>,
@@ -813,7 +813,7 @@ class ClutchStateStore {
     }
     this.emit();
 
-    this.connectPromise = sidecarWebSocketUrl(`/ws/runs/${runId}`).then(
+    this.connectPromise = serverWebSocketUrl(`/ws/runs/${runId}`).then(
       (wsUrl) =>
         new Promise<void>((resolve, reject) => {
       const ws = new WebSocket(wsUrl);
@@ -821,7 +821,7 @@ class ClutchStateStore {
 
       ws.onopen = () => {
         this._connected = true;
-        console.log('%c[Clutch WS] Connected to sidecar', 'color: #22c55e; font-weight: bold;');
+        console.log('%c[Smurf WS] Connected to server', 'color: #22c55e; font-weight: bold;');
         resolve();
       };
 
@@ -960,7 +960,7 @@ class ClutchStateStore {
             return;
           }
         } catch {
-          console.warn('[Clutch WS] non-JSON message:', event.data);
+          console.warn('[Smurf WS] non-JSON message:', event.data);
         }
       };
 
@@ -1004,7 +1004,7 @@ class ClutchStateStore {
 
   /**
    * D9 — optimistic Stop: flip UI to idle + Continue immediately so the Stop
-   * button does not look stuck waiting on the sidecar round-trip.
+   * button does not look stuck waiting on the server round-trip.
    */
   optimisticPlainChatStop(): void {
     this.applyPatch({

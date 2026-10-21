@@ -1,4 +1,4 @@
-import { SIDECAR_BASE as BASE, sidecarFetch } from './sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from './serverUrl';
 
 export type DesignSpec = {
   name?: string;
@@ -233,7 +233,7 @@ export function versionedDesignScreenId(screenId: string, roundIndex: number): s
   return `${base}_r${roundIndex}`;
 }
 
-/** Sidecar path for a versioned HTML screen preview. */
+/** Server path for a versioned HTML screen preview. */
 export function designScreenVersionPath(
   runId: string,
   screenId: string,
@@ -263,7 +263,7 @@ export async function ensureDesignSession(input: {
   title?: string;
   prompt?: string;
 }): Promise<DesignSession> {
-  const response = await sidecarFetch(`${BASE}/api/design/sessions`, {
+  const response = await serverFetch(`${BASE}/api/design/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -272,13 +272,13 @@ export async function ensureDesignSession(input: {
 }
 
 export async function getDesignSession(runId: string): Promise<DesignSession> {
-  const response = await sidecarFetch(`${BASE}/api/design/sessions/${encodeURIComponent(runId)}`);
+  const response = await serverFetch(`${BASE}/api/design/sessions/${encodeURIComponent(runId)}`);
   return parseJson<DesignSession>(response);
 }
 
 /** Raw screen HTML (same endpoint as sidebar live thumb) — used when session JSON omits/ lags html. */
 export async function getDesignScreenHtml(runId: string, screenId: string): Promise<string> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/screens/${encodeURIComponent(screenId)}`,
   );
   if (!response.ok) {
@@ -299,7 +299,7 @@ export async function generateDesignSession(
     design_system?: string | null;
   },
 ): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/generate`,
     {
       method: 'POST',
@@ -323,7 +323,7 @@ export async function iterateDesignSession(
     mode?: DesignIterateMode | null;
   },
 ): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/iterate`,
     {
       method: 'POST',
@@ -343,7 +343,7 @@ export async function iterateDesignSession(
 
 /** D40: confirm Spec and continue UI generation (async — poll session). */
 export async function confirmDesignSpec(runId: string): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/confirm-spec`,
     { method: 'POST' },
   );
@@ -354,7 +354,7 @@ export async function deleteDesignScreen(
   runId: string,
   screenId: string,
 ): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/screens/${encodeURIComponent(screenId)}`,
     { method: 'DELETE' },
   );
@@ -362,7 +362,7 @@ export async function deleteDesignScreen(
 }
 
 export async function approveDesignPrototype(runId: string): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/approve-prototype`,
     { method: 'POST' },
   );
@@ -370,7 +370,7 @@ export async function approveDesignPrototype(runId: string): Promise<DesignSessi
 }
 
 export async function generateDesignReact(runId: string): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/generate-react`,
     { method: 'POST' },
   );
@@ -380,7 +380,7 @@ export async function generateDesignReact(runId: string): Promise<DesignSession>
 export async function startDesignPreview(
   runId: string,
 ): Promise<{ url: string; port: number; status: string }> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/preview/start`,
     { method: 'POST' },
   );
@@ -388,7 +388,7 @@ export async function startDesignPreview(
 }
 
 export async function stopDesignPreview(runId: string): Promise<void> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/preview/stop`,
     { method: 'POST' },
   );
@@ -396,7 +396,7 @@ export async function stopDesignPreview(runId: string): Promise<void> {
 }
 
 export async function approveDesignReact(runId: string): Promise<DesignSession> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/approve-react`,
     { method: 'POST' },
   );
@@ -404,7 +404,7 @@ export async function approveDesignReact(runId: string): Promise<DesignSession> 
 }
 
 export async function sendDesignToCoding(runId: string): Promise<CodingHandoff> {
-  const response = await sidecarFetch(
+  const response = await serverFetch(
     `${BASE}/api/design/sessions/${encodeURIComponent(runId)}/send-to-coding`,
     { method: 'POST' },
   );

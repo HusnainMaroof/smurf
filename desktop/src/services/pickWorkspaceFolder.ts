@@ -16,13 +16,8 @@ export async function pickWorkspaceFolder(
 ): Promise<string | null> {
   if (!isTauri()) {
     throw new WorkspacePickerError(
-      'Folder picker only works in the Clutch desktop app. Open Clutch from Applications, not the browser.',
+      'Folder picker only works in the Smurf desktop app. Open the Smurf desktop app, not the browser.',
     );
-  }
-
-  const e2eSandbox = await invoke<string | null>('clutch_e2e_sandbox');
-  if (e2eSandbox) {
-    return e2eSandbox;
   }
 
   let initialPath = defaultPath;

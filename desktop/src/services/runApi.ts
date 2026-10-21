@@ -1,4 +1,4 @@
-import { sidecarHttpUrl, sidecarFetch } from './sidecarUrl';
+import { serverHttpUrl, serverFetch } from './serverUrl';
 
 export type SessionMode = 'coding' | 'design';
 
@@ -58,12 +58,13 @@ export async function fetchSessions(
   if (workspaceId) params.set('workspace_id', workspaceId);
   if (mode) params.set('mode', mode);
   const query = params.toString() ? `?${params.toString()}` : '';
-  const response = await sidecarFetch(sidecarHttpUrl(`/api/runs/history${query}`));
+  const response = await serverFetch(serverHttpUrl(`/api/runs/history${query}`));
   if (!response.ok) {
     throw new Error(`Failed to load sessions (${response.status})`);
   }
-  const body = (await response.json()) as { runs: SessionRecord[] };
-  return body.runs;
+  // Clutch returned `{runs}`; smurf-server returns `{sessions}` (docs/SMURF.md).
+  const body = (await response.json()) as { runs?: SessionRecord[]; sessions?: SessionRecord[] };
+  return body.runs ?? body.sessions ?? [];
 }
 
 /** @deprecated use fetchSessions */
@@ -84,7 +85,7 @@ export async function createSession(input: {
   if (input.workflow_id != null) payload.workflow_id = input.workflow_id;
   // Only send status when caller sets it — avoids title updates resurrecting "running".
   if (input.status != null) payload.status = input.status;
-  const response = await sidecarFetch(sidecarHttpUrl('/api/sessions'), {
+  const response = await serverFetch(serverHttpUrl('/api/sessions'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -102,7 +103,7 @@ export async function startWorkflowRun(
   workflowId: string,
   instruction: string,
 ): Promise<{ run_id: string; status: string; state: import('../types').ClutchState }> {
-  const response = await sidecarFetch(sidecarHttpUrl(`/api/runs/${runId}/start`), {
+  const response = await serverFetch(serverHttpUrl(`/api/runs/${runId}/start`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ workflow_id: workflowId, instruction }),
@@ -118,7 +119,7 @@ export async function startWorkflowRun(
 export async function fetchRunState(
   runId: string,
 ): Promise<{ run_id: string; state: import('../types').ClutchState }> {
-  const response = await sidecarFetch(sidecarHttpUrl(`/api/runs/${encodeURIComponent(runId)}/state`));
+  const response = await serverFetch(serverHttpUrl(`/api/runs/${encodeURIComponent(runId)}/state`));
   if (!response.ok) {
     throw new Error(`Failed to load session state (${response.status})`);
   }
@@ -126,7 +127,7 @@ export async function fetchRunState(
 }
 
 export async function deleteSession(runId: string): Promise<void> {
-  const response = await sidecarFetch(sidecarHttpUrl(`/api/runs/${encodeURIComponent(runId)}`), {
+  const response = await serverFetch(serverHttpUrl(`/api/runs/${encodeURIComponent(runId)}`), {
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -144,8 +145,8 @@ export interface CompactResult {
 
 /** D18 — force context compaction for the active run. */
 export async function compactRun(runId: string): Promise<CompactResult> {
-  const response = await sidecarFetch(
-    sidecarHttpUrl(`/api/runs/${encodeURIComponent(runId)}/compact`),
+  const response = await serverFetch(
+    serverHttpUrl(`/api/runs/${encodeURIComponent(runId)}/compact`),
     { method: 'POST' },
   );
   if (!response.ok) {
@@ -168,8 +169,8 @@ export async function forkSession(runId: string, messageIndex: number): Promise<
   message_index: number;
   title?: string;
 }> {
-  const response = await sidecarFetch(
-    sidecarHttpUrl(`/api/runs/${encodeURIComponent(runId)}/fork`),
+  const response = await serverFetch(
+    serverHttpUrl(`/api/runs/${encodeURIComponent(runId)}/fork`),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -204,8 +205,8 @@ export async function rewindFileWrites(
   remaining_snapshots: number;
   state?: import('../types').ClutchState;
 }> {
-  const response = await sidecarFetch(
-    sidecarHttpUrl(`/api/runs/${encodeURIComponent(runId)}/rewind`),
+  const response = await serverFetch(
+    serverHttpUrl(`/api/runs/${encodeURIComponent(runId)}/rewind`),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

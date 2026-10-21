@@ -42,7 +42,7 @@ export const AgentCliModelHint: React.FC<AgentCliModelHintProps> = ({ agentType 
         {loading ? t('Scanning…') : modelId ?? t('Not detected in native config')}
       </div>
       <p className="text-[9.5px] text-neutral-400 leading-relaxed">
-        {t('{label} models are managed outside Clutch.').replace('{label}', label)}
+        {t('{label} models are managed outside Smurf.').replace('{label}', label)}
       </p>
       {tab ? (
         <button

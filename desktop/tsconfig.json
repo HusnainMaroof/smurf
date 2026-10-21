@@ -13,7 +13,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
-      "@clutch/shared-types": ["../../packages/shared-types/index.ts"]
+      "@smurf/shared-types": ["./shared-types/index.ts"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true

@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { LegacyIcon } from './ui/LegacyIcon';
 import { FooterFieldChevron, FooterFieldLabel, FooterFieldValue, FooterMenuItem, FooterMenuPanel, FooterMenuRowIcon, FOOTER_CHIP_BUTTON_CLASS, footerIdleHiddenClass } from './FooterMenu';
-import { SIDECAR_BASE as BASE, sidecarFetch } from '../services/sidecarUrl';
+import { SERVER_BASE as BASE, serverFetch } from '../services/serverUrl';
 
 export interface WorktreeIsolationState {
   id: string;
@@ -77,7 +77,7 @@ export function FooterWorktreeMenu({
       : trees;
 
   const reload = useCallback(async () => {
-    const res = await sidecarFetch(`${BASE}/api/worktree`);
+    const res = await serverFetch(`${BASE}/api/worktree`);
     if (!res.ok) return;
     const body = (await res.json()) as { worktrees?: WorktreeIsolationState[] };
     setTrees(body.worktrees ?? []);
@@ -93,7 +93,7 @@ export function FooterWorktreeMenu({
     if (spawning) return;
     setError(null);
     setSpawning(true);
-    void sidecarFetch(`${BASE}/api/worktree/spawn`, { method: 'POST' })
+    void serverFetch(`${BASE}/api/worktree/spawn`, { method: 'POST' })
       .then(async (res) => {
         if (!res.ok) throw new Error(await spawnErrorMessage(res, t('Failed')));
         return reload();

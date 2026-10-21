@@ -55,8 +55,8 @@ import { detectBgJobFailureToast } from '../services/bgJobMonitor';
 import { VerificationReportCardView } from './VerificationReportCardView';
 import { DiffSummaryCardView } from './DiffSummaryCardView';
 import { resolveBrandLogoSrc } from '../services/brandLogos';
-import { clutchMarkUrl } from '../assets/brand';
-import { SIDECAR_BASE as BASE, sidecarFetch } from '../services/sidecarUrl';
+import { smurfMarkUrl } from '../assets/brand';
+import { SERVER_BASE as BASE, serverFetch } from '../services/serverUrl';
 import { AgentChatAvatar } from './AgentChatAvatar';
 import { ChatBubbleVideo } from './ChatBubbleVideo';
 import {
@@ -343,7 +343,7 @@ interface ChatFeedProps {
   onViewToolStepInTerminal?: (step: ToolStep) => void;
   /** D30 — switch session from overview board. */
   onSelectSession?: (session: SessionRecord) => void;
-  /** D40 — Hub MCP binding badge for Clutch Agent. */
+  /** D40 — Hub MCP binding badge for Smurf Agent. */
   mcpServerIds?: string[];
   showMcpBindingBadge?: boolean;
   onOpenMcpBind?: () => void;
@@ -367,10 +367,10 @@ function isPlainLlmReply(agent: string): boolean {
 }
 
 
-/** Map agent-configured engine label to runtime label from the sidecar. */
+/** Map agent-configured engine label to runtime label from the server. */
 export function configuredEngineToRuntimeLabel(agentTypeOrLegacy: string): string {
   const key = agentTypeOrLegacy.trim().toLowerCase();
-  if (key === 'clutch' || key.includes('configured llm')) return 'Clutch';
+  if (key === 'clutch' || key.includes('configured llm')) return 'Smurf';
   if (key.includes('claude') || key === 'claude-cli') return 'Claude CLI';
   if (key.includes('antigravity') || key.includes('agenty') || key === 'agy-cli' || key === 'antigravity-cli') {
     return 'Antigravity CLI';
@@ -834,7 +834,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
         };
         onSelectSession?.(session);
       } catch (error) {
-        console.error('[Clutch] fork session failed:', error);
+        console.error('[Smurf] fork session failed:', error);
       }
     },
     [sessionRunId, isPlainLlmChat, onSelectSession],
@@ -848,7 +848,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
         clutchStore.replaceState(result.state);
       }
     } catch (error) {
-      console.error('[Clutch] rewind files failed:', error);
+      console.error('[Smurf] rewind files failed:', error);
     }
   }, [sessionRunId, isPlainLlmChat]);
 
@@ -958,7 +958,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
     for (const msg of [...messages].reverse()) {
       const blob = `${msg.text} ${(msg.toolSteps || []).map((step) => `${step.title} ${step.detail || ''}`).join(' ')}`;
       if (/interpreter timeout|timed out/i.test(blob)) return 'timeout' as const;
-      if (/interpreter offline|sidecar may be offline|connection refused/i.test(blob)) return 'offline' as const;
+      if (/interpreter offline|server may be offline|connection refused/i.test(blob)) return 'offline' as const;
     }
     return null;
   }, [messages]);
@@ -1187,7 +1187,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
     const showWorkflowLabel = !isPlainLlmChat && Boolean(workflowAgentType);
 
     if (showPlainLlmLabel || (statusHint && isPlainLlmChat) || showHybridLabel || showWorkflowLabel) {
-      const agentTitle = showHybridLabel ? agent : (agent || activeAgentName || t('Clutch Agent'));
+      const agentTitle = showHybridLabel ? agent : (agent || activeAgentName || t('Smurf Agent'));
       const engineLabel = showHybridLabel
         ? replyRuntimeLabel(runtimeEngine, llmModelName)
         : workflowAgentType
@@ -1370,7 +1370,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
               </h2>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 {isMultiAgent
-                  ? t('Select a workspace and start a workflow, or type an instruction below. Clutch will orchestrate AI Agents and ask for your approval when needed.')
+                  ? t('Select a workspace and start a workflow, or type an instruction below. Smurf will orchestrate AI Agents and ask for your approval when needed.')
                   : t('Select a workspace and type an instruction below to chat with the agent directly.')
                 }
               </p>
@@ -1535,10 +1535,10 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
                 }`}
               >
                 {isUser ? (
-                  <div className={`${chatChrome.messageAvatarClass} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center ${avatarUrl === clutchMarkUrl ? 'bg-black' : 'bg-surface-container'}`}>
+                  <div className={`${chatChrome.messageAvatarClass} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center ${avatarUrl === smurfMarkUrl ? 'bg-transparent' : 'bg-surface-container'}`}>
                     {avatarUrl ? (
                       <img
-                        className={avatarUrl === clutchMarkUrl ? 'w-full h-full object-cover' : 'w-full h-full object-contain p-1'}
+                        className={avatarUrl === smurfMarkUrl ? 'w-full h-full object-cover' : 'w-full h-full object-contain p-1'}
                         src={avatarUrl}
                         alt={msg.agent}
                       />
@@ -1781,13 +1781,13 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
             <div className={chatChrome.thinkingRowClass}>
               <AgentChatAvatar
                 src={thinkingAgentLogo || activeAgentAvatar}
-                alt={thinkingAgentName || t('Clutch Agent')}
+                alt={thinkingAgentName || t('Smurf Agent')}
               />
 
               <div className="flex-1 space-y-1.5 min-w-0">
                 <div className="flex items-center gap-2">
                   {renderAgentLabel(
-                    thinkingAgentName || t('Clutch Agent'),
+                    thinkingAgentName || t('Smurf Agent'),
                     shellSessionStatus === 'queued_pool'
                       ? t('Queued for shell...')
                       : showLiveActivity
@@ -1951,7 +1951,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
                   {currentFlowName ? ` · ${currentFlowName}` : ''}
                 </p>
                 <p className="text-xs text-on-surface mt-0.5 font-medium">
-                  {t('Receiving sidecar events')}
+                  {t('Receiving server events')}
                 </p>
               </div>
             </div>
@@ -2120,7 +2120,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
                   <p className="text-[10px] text-amber-900/90 mt-0.5">
                     {interpreterError === 'timeout'
                       ? t('The command exceeded its time limit. Shorten it or raise timeout_sec.')
-                      : t('The shell could not start. Check PATH and Sidecar, then retry.')}
+                      : t('The shell could not start. Check PATH and Server, then retry.')}
                   </p>
                 </div>
               </div>

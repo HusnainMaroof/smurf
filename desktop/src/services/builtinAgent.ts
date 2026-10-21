@@ -5,12 +5,12 @@ export const BUILTIN_AGENT_ID = 'clutch-agent';
 export function getBuiltinAgent(): Agent {
   return {
     id: BUILTIN_AGENT_ID,
-    name: 'Clutch Agent',
+    name: 'Smurf Agent',
     description: 'System built-in general-purpose agent for supervised workspace tasks.',
     markdownDoc: [
-      '# Clutch Agent',
+      '# Smurf Agent',
       '',
-      'You are Clutch Agent, the default system agent for single-agent sessions.',
+      'You are Smurf Agent, the default system agent for single-agent sessions.',
       '',
       '## Protocol',
       '- Understand the user\'s goal in the active workspace.',

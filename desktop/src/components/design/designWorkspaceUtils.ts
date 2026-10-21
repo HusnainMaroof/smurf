@@ -549,7 +549,7 @@ export function buildCanvasNodes(
       const screenId = screen.id || 'main';
       const perScreenRoundIdx = extras?.screenVersions?.[screenId] ?? extras?.selectedRoundIndex ?? activeRound?.screenRoundIndex ?? 0;
       const versionedHtml = extras?.roundHtmlByScreen?.[screenId];
-      // Always prefer the sidecar-served preview (src=) over srcDoc: oversized
+      // Always prefer the server-served preview (src=) over srcDoc: oversized
       // srcDoc iframes freeze at the initial pre-Tailwind paint in both Chromium
       // and WKWebView, leaving generated pages unstyled (black-and-white).
       const previewSrc =
@@ -680,7 +680,7 @@ export function buildCanvasEdges(nodes: Node[]): Edge[] {
 }
 
 export const DESIGN_SYSTEM_PRESETS = [
-  { id: 'clutch',   labelKey: 'Clutch',   descriptionKey: 'Built-in Clutch design system — clean developer-tool aesthetic', color: '#171717' },
+  { id: 'clutch',   labelKey: 'Smurf',   descriptionKey: 'Built-in Smurf design system — clean developer-tool aesthetic', color: '#171717' },
   { id: 'airbnb', labelKey: 'Airbnb', descriptionKey: 'Travel marketplace. Warm coral accent, photography-driven, rounded UI', color: '#ff385c' },
   { id: 'airtable', labelKey: 'Airtable', descriptionKey: 'Spreadsheet-database hybrid. Colorful, friendly, structured data aesthetic', color: '#181d26' },
   { id: 'apple', labelKey: 'Apple', descriptionKey: 'Consumer electronics. Premium white space, SF Pro, cinematic imagery', color: '#0066cc' },

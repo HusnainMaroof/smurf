@@ -69,8 +69,8 @@ export const AgentCliCapabilityPreview: React.FC<AgentCliCapabilityPreviewProps>
     <div className="space-y-3">
       <p className="text-[10px] text-neutral-500 leading-relaxed">
         {kind === 'skills'
-          ? t('This agent uses {label} native skills — not the Clutch Skills Registry.').replace('{label}', label)
-          : t('This agent uses {label} native MCP servers — not Clutch MCP Hub bindings.').replace('{label}', label)}
+          ? t('This agent uses {label} native skills — not the Smurf Skills Registry.').replace('{label}', label)
+          : t('This agent uses {label} native MCP servers — not Smurf MCP Hub bindings.').replace('{label}', label)}
       </p>
 
       <div className="flex gap-2">

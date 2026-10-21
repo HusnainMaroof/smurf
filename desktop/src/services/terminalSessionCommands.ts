@@ -5,7 +5,7 @@ export interface TerminalHistoryCommand {
   descKey: string;
 }
 
-/** Clutch lane ids are UUIDs — not valid OpenCode `opencode -s` session ids (ses_*). */
+/** Smurf lane ids are UUIDs — not valid OpenCode `opencode -s` session ids (ses_*). */
 export function isClutchAssignedSessionId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
 }
@@ -15,7 +15,7 @@ export function isOpenCodeNativeSessionId(id: string): boolean {
   return Boolean(trimmed) && !isClutchAssignedSessionId(trimmed);
 }
 
-/** CLIs that receive Clutch lane UUID via --session-id on interactive PTY spawn. */
+/** CLIs that receive Smurf lane UUID via --session-id on interactive PTY spawn. */
 export function canResumeByStoredSessionId(agentType: string, id: string): boolean {
   const trimmed = id.trim();
   if (!trimmed) return false;
@@ -58,7 +58,7 @@ export function buildTerminalHistoryCommand(
           ? wrapResumeCommandWithWorkspaceCd(workspacePath, `claude --resume ${id}`)
           : wrapResumeCommandWithWorkspaceCd(workspacePath, 'claude'),
         descKey:
-          'Run this in your system terminal from the same project directory Clutch used. Restores the Claude Code session. If unsure, run claude (no args) or use /resume in the CLI picker.',
+          'Run this in your system terminal from the same project directory Smurf used. Restores the Claude Code session. If unsure, run claude (no args) or use /resume in the CLI picker.',
       };
     case 'codebuddy-cli':
     case 'codebuddy':
@@ -68,7 +68,7 @@ export function buildTerminalHistoryCommand(
           ? wrapResumeCommandWithWorkspaceCd(workspacePath, `codebuddy --resume ${id}`)
           : wrapResumeCommandWithWorkspaceCd(workspacePath, 'codebuddy'),
         descKey:
-          'Run this in your system terminal from the same project directory Clutch used. Restores the CodeBuddy session.',
+          'Run this in your system terminal from the same project directory Smurf used. Restores the CodeBuddy session.',
       };
     case 'codex-cli':
     case 'codex':
@@ -76,12 +76,12 @@ export function buildTerminalHistoryCommand(
         ? {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, `codex resume ${id}`),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Restores the Codex session by ID.',
+              'Run this in your system terminal from the same project directory Smurf used. Restores the Codex session by ID.',
           }
         : {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, 'codex resume --last'),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Continues the most recent Codex session in that folder (codex resume --last). Run codex resume to pick from history.',
+              'Run this in your system terminal from the same project directory Smurf used. Continues the most recent Codex session in that folder (codex resume --last). Run codex resume to pick from history.',
           };
     case 'opencode-cli':
     case 'opencode':
@@ -89,12 +89,12 @@ export function buildTerminalHistoryCommand(
         ? {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, `opencode -s ${id}`),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Restores the OpenCode session by ID.',
+              'Run this in your system terminal from the same project directory Smurf used. Restores the OpenCode session by ID.',
           }
         : {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, 'opencode -c'),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Continues the most recent OpenCode session in that folder (opencode -c). Run opencode session list to pick a specific session.',
+              'Run this in your system terminal from the same project directory Smurf used. Continues the most recent OpenCode session in that folder (opencode -c). Run opencode session list to pick a specific session.',
           };
     case 'mimo-cli':
     case 'mimo':
@@ -102,12 +102,12 @@ export function buildTerminalHistoryCommand(
         ? {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, `mimo -s ${id}`),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Restores the MiMo Code session by ID.',
+              'Run this in your system terminal from the same project directory Smurf used. Restores the MiMo Code session by ID.',
           }
         : {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, 'mimo -c'),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Continues the most recent MiMo Code session in that folder (mimo -c). Run mimo session list to pick a specific session.',
+              'Run this in your system terminal from the same project directory Smurf used. Continues the most recent MiMo Code session in that folder (mimo -c). Run mimo session list to pick a specific session.',
           };
     case 'antigravity-cli':
     case 'agy-cli':
@@ -116,12 +116,12 @@ export function buildTerminalHistoryCommand(
         ? {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, `agy --conversation ${id}`),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Restores the Antigravity CLI session.',
+              'Run this in your system terminal from the same project directory Smurf used. Restores the Antigravity CLI session.',
           }
         : {
             cmd: wrapResumeCommandWithWorkspaceCd(workspacePath, 'agy'),
             descKey:
-              'Run this in your system terminal from the same project directory Clutch used. Open Antigravity CLI and pick the conversation from its session list.',
+              'Run this in your system terminal from the same project directory Smurf used. Open Antigravity CLI and pick the conversation from its session list.',
           };
     case 'rivet-cli':
     case 'rivet':
@@ -152,7 +152,7 @@ export function buildTerminalHistoryCommand(
           ? wrapResumeCommandWithWorkspaceCd(workspacePath, `zcode --resume ${id}`)
           : wrapResumeCommandWithWorkspaceCd(workspacePath, 'zcode -c'),
         descKey:
-          'Run this in your system terminal from the same project directory Clutch used. Resumes the ZCode session by sess_-prefixed id, or continues the most recent session (zcode -c).',
+          'Run this in your system terminal from the same project directory Smurf used. Resumes the ZCode session by sess_-prefixed id, or continues the most recent session (zcode -c).',
       };
     default:
       return {

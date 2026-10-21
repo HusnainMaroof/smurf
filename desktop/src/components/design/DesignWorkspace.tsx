@@ -91,7 +91,7 @@ import {
   type DesignSpec,
 } from '../../services/designApi';
 import { clutchStore } from '../../services/clutchState';
-import { sidecarAuthedHttpUrl } from '../../services/sidecarUrl';
+import { serverAuthedHttpUrl } from '../../services/serverUrl';
 
 type DesignWorkspaceProps = {
   runId: string;

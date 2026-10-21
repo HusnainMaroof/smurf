@@ -11,14 +11,14 @@ export class AppErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error) {
-    console.error('[Clutch] UI crashed:', error);
+    console.error('[Smurf] UI crashed:', error);
   }
 
   render() {
     if (this.state.error) {
       return (
         <div className="h-screen flex flex-col items-center justify-center gap-3 bg-background text-on-surface px-6 text-center font-sans">
-          <p className="text-sm font-semibold">Clutch UI encountered an error</p>
+          <p className="text-sm font-semibold">Smurf UI encountered an error</p>
           <p className="text-xs text-on-surface-variant max-w-md break-words">
             {this.state.error.message}
           </p>
