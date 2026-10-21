@@ -6,3 +6,4 @@ dist/
 .claude/worktrees/
 .claude/settings.local.json
 desktop/
+.claude/scheduled_tasks.lock
