@@ -3,14 +3,48 @@ import { mergeAgentsWithBuiltin } from './builtinAgent';
 
 import { SERVER_BASE as BASE, isUnsupported, serverFetch } from './serverUrl';
 
+export type SmurfAgentProfile = {
+  id: string;
+  category: string;
+  name: string;
+  mode: 'edit' | 'readonly';
+  minTier: string;
+  timeoutMin: number;
+  review: string;
+  description: string;
+};
+
+export function profileToAgent(p: SmurfAgentProfile): Agent {
+  const categoryLine = `Category: ${p.category}, mode: ${p.mode}, min tier: ${p.minTier}, review: ${p.review}`;
+  const description = `${p.description}\n${categoryLine}`;
+  return {
+    id: `smurf-${p.id}`,
+    name: p.name,
+    description,
+    markdownDoc: `# ${p.name}\n\n${description}`,
+    lastModified: 'smurf-server',
+    avatar: '',
+    deliverables: [],
+    mcpTools: [],
+    mcpServerIds: [],
+    agentType: 'smurf',
+    aiEngine: 'smurf',
+    skills: [],
+  };
+}
+
 export async function fetchAgents(): Promise<Agent[]> {
   const response = await serverFetch(`${BASE}/api/agents`);
   if (isUnsupported(response)) return mergeAgentsWithBuiltin([]);
   if (!response.ok) throw new Error(`agents fetch failed (${response.status})`);
-  // Clutch shape is `{agents: Agent[]}`. smurf-server returns a bare array of vault agent
-  // profiles (different shape) — not mapped yet, so only the built-in agent is shown.
-  const body = (await response.json()) as { agents?: Agent[] } | unknown[];
-  const agents = !Array.isArray(body) && Array.isArray(body?.agents) ? body.agents : [];
+  // Clutch shape is `{agents: Agent[]}`. smurf-server returns a bare array of agent profiles.
+  const body = (await response.json()) as { agents?: Agent[] } | SmurfAgentProfile[] | unknown;
+  if (Array.isArray(body)) {
+    return mergeAgentsWithBuiltin(body.map(profileToAgent));
+  }
+  const agents = !Array.isArray(body) && Array.isArray((body as { agents?: Agent[] })?.agents)
+    ? (body as { agents: Agent[] }).agents
+    : [];
   return mergeAgentsWithBuiltin(agents);
 }
 
@@ -20,6 +54,7 @@ export async function saveAgents(agents: Agent[]): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agents }),
   });
+  if (isUnsupported(response)) return;
   if (!response.ok) throw new Error(`agents save failed (${response.status})`);
 }
 
