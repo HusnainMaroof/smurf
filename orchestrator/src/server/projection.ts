@@ -191,9 +191,12 @@ export function project(s: RunState, vaultRunDir: string, logs: string[] = []): 
   }
   for (const t of s.tasks) for (const a of t.attempts) m.push(attemptMessage(s, t, a));
   if (w && w.kind !== "question" && w.kind !== "approval")
-    m.push({ id: `escalation-${w.taskId ?? ""}`, agent: "Senior", avatar: "", time: hhmm(s.updatedAt), status: "FAILED", badgeText: "NEEDS YOU", text: w.question, questionCard: { question: w.question, options: w.options.map((o) => ({ id: o, label: o })), status: "pending" } });
+    // answered with the decision buttons (state.waiting.options), not a question card
+    m.push({ id: `escalation-${w.taskId ?? ""}`, agent: "Senior", avatar: "", time: hhmm(s.updatedAt), badgeText: "DECISION", text: `${w.question}
+
+Choose: ${w.options.join(", ")}` });
   const report = read(path.join(vaultRunDir, "report.md"), 40_000);
-  if ((s.status === "done" || s.status === "aborted") && report) m.push({ id: "report", agent: "Senior", avatar: "", time: hhmm(s.updatedAt), status: "COMPLETED", badgeText: "REPORT", text: report.replace(/^---[\s\S]*?---\s*/, "") });
+  if ((s.status === "done" || s.status === "aborted") && report) m.push({ id: "report", agent: "Senior", avatar: "", time: hhmm(s.updatedAt), status: "COMPLETED", badgeText: "REPORT", text: report.replace(/^---[\s\S]*?---\s*/, "").replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, "`$1`").replace(/\[\[([^\]]+)\]\]/g, "$1") });
   if (s.error) m.push({ id: "error", agent: "System", avatar: "", time: hhmm(s.updatedAt), status: "FAILED", text: `Run failed: ${s.error.split("\n")[0]}` });
 
   const cur = s.tasks.find((t) => t.id === s.currentTask);

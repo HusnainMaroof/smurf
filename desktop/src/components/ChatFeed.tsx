@@ -47,7 +47,7 @@ import { PlanCardView, formatPlanRevisePayload, hasPlanStepComments } from './Pl
 import { QuestionCardView } from './QuestionCardView';
 import { TodoCardView, shouldPinLiveTodos } from './TodoCardView';
 import { GoalBarView, shouldShowGoalBar } from './GoalBarView';
-import { GateOptionsBar } from './GateOptionsBar';
+import { GateOptionsBar, hasSmurfDecision } from './GateOptionsBar';
 import { SeniorPicker } from './SeniorPicker';
 import { SubtaskCardView } from './SubtaskCardView';
 import { BackgroundJobChip, BackgroundJobsBar } from './BackgroundJobsBar';
@@ -1965,6 +1965,10 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
               <LegacyIcon name="cancel" className="text-[13px]" />
               Stop
             </button>
+          </div>
+        ) : awaitingHuman && hasSmurfDecision(clutchOrchestraState) ? (
+          <div className={`w-full ${chatChrome.chatMaxWidthClass}`}>
+            <GateOptionsBar />
           </div>
         ) : awaitingHuman ? (
           <div className={`w-full ${chatChrome.chatMaxWidthClass} flex flex-col gap-1.5`}>

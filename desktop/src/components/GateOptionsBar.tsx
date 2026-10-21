@@ -18,6 +18,12 @@ type Waiting = {
 
 type GateButton = { id: string; label: string; tone: 'primary' | 'danger' | 'neutral' };
 
+/** True when the run waits for a Smurf decision (options other than a free-text question). */
+export function hasSmurfDecision(state: unknown): boolean {
+  const w = (state as { waiting?: Waiting | null } | null)?.waiting;
+  return !!w && w.kind !== 'question' && !!w.options?.length;
+}
+
 /** Pure option-to-button mapping used by the gate bar and its tests. */
 export function gateButtons(options: string[]): GateButton[] {
   return options.map((option, index) => ({
