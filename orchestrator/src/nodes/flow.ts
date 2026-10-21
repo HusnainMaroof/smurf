@@ -19,7 +19,8 @@ export function followUps(report: string): string[] {
     else if (items.length) items[items.length - 1] += " " + line.trim(); // wrapped bullet
     else items.push(line.trim());
   }
-  return items.filter((l) => !/^(none|n\/a|nothing)\.?$/i.test(l));
+  // "None." / "None. x verified" are not follow-ups; "None of the callers handle x" is
+  return items.filter((l) => !/^(none|n\/a|nothing)(\s*[.!:;,—–-]|$)/i.test(l));
 }
 
 /** Skips tasks whose dependencies failed, then returns the first pending task whose dependencies are accepted and that `free` allows. */
