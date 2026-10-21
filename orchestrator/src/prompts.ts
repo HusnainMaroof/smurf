@@ -121,6 +121,7 @@ export function reviewPrompt(o: { s: RunState; t: Task; ev: Evidence; diff: stri
   return [
     "ORCH:review",
     "You are an independent code reviewer. Another agent made this change. Judge it from the diff and the evidence, not from its report. Do not modify files.",
+    "The engine already ran every acceptance check in this workspace; the results are under ENGINE EVIDENCE. Do not run builds, tests, installs or other commands: read the diff and, only when needed, the files it touches. Problems of your own environment are not findings.",
     terseRule(o.terse),
     `TASK ${t.id} (${t.category}, risk ${t.risk}): ${t.title}\n${t.brief}`,
     `ALLOWED FILES: ${t.files.join(", ") || "(none)"}`,

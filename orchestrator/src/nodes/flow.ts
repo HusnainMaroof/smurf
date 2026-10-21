@@ -7,6 +7,21 @@ import { modelLink } from "../vault.ts";
 import { buildCodeGraph } from "../graph.ts";
 import { commandExists, git } from "../util.ts";
 
+/** Bullet lines under the report's "## Follow-ups" heading (until the next heading); "none" entries dropped. */
+export function followUps(report: string): string[] {
+  const m = report.match(/^##\s*Follow-ups?\s*$([\s\S]*?)(?=^#{1,2}\s|(?![\s\S]))/im);
+  if (!m) return [];
+  const items: string[] = [];
+  for (const line of m[1].split("\n")) {
+    if (!line.trim() || line.trim().startsWith("```")) continue;
+    const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    if (bullet) items.push(bullet[1].trim());
+    else if (items.length) items[items.length - 1] += " " + line.trim(); // wrapped bullet
+    else items.push(line.trim());
+  }
+  return items.filter((l) => !/^(none|n\/a|nothing)\.?$/i.test(l));
+}
+
 export const flowNodes: NodeType[] = [
   {
     type: "context.codemap",
@@ -145,6 +160,15 @@ export const flowNodes: NodeType[] = [
         return `| ${t.id} | ${t.title.replace(/\|/g, "/")} | ${t.status} | ${a ? modelLink(a.model).replace("|", "\\|") : "-"} | ${t.attempts.length} | ${a?.review?.score ?? "-"} | ${checks} |`;
       });
       const accepted = s.tasks.filter((t) => t.status === "accepted").length;
+      // follow-ups the agents and reviewers noted but did not do; the owner turns these into next tasks
+      const follow = s.tasks.flatMap((t) => {
+        const a = t.attempts.find((x) => x.decision === "accept") ?? t.attempts[t.attempts.length - 1];
+        if (!a) return [];
+        const report = a.reportFile && fs.existsSync(a.reportFile) ? fs.readFileSync(a.reportFile, "utf8") : "";
+        const notes = followUps(report).map((n) => `- **${t.id}** (agent): ${n}`);
+        const findings = (a.review?.findings ?? []).map((f) => `- **${t.id}** (review, ${f.severity}): ${f.file ? `\`${f.file}\` ` : ""}${f.issue}`);
+        return [...notes, ...findings];
+      });
       const body = [
         `# Report: ${s.request.split("\n")[0].slice(0, 100)}`,
         `Status **${s.status}**, ${accepted}/${s.tasks.length} tasks accepted, billed cost $${s.costUsd.toFixed(4)}, subscription usage equivalent $${(s.usageUsd ?? 0).toFixed(4)}.`,
@@ -152,6 +176,7 @@ export const flowNodes: NodeType[] = [
         accepted
           ? `## Next step (owner)\n\nAccepted work is on branch \`${s.integrationBranch}\` in \`${s.project.repo}\`. Nothing was merged into \`${s.project.baseBranch}\`.\n\n\`\`\`\ngit -C "${s.project.repo}" log --oneline ${s.project.baseBranch}..${s.integrationBranch}\ngit -C "${s.project.repo}" diff ${s.project.baseBranch}...${s.integrationBranch}\ngit -C "${s.project.repo}" merge ${s.integrationBranch}\n\`\`\``
           : "",
+        follow.length ? `## Follow-ups\n\n${follow.join("\n")}` : "",
       ].filter(Boolean).join("\n\n");
       fs.writeFileSync(path.join(engine.vault.runDir(s.id), "report.md"), body + "\n");
       return "out";
