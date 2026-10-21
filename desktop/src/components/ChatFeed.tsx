@@ -48,6 +48,7 @@ import { QuestionCardView } from './QuestionCardView';
 import { TodoCardView, shouldPinLiveTodos } from './TodoCardView';
 import { GoalBarView, shouldShowGoalBar } from './GoalBarView';
 import { GateOptionsBar } from './GateOptionsBar';
+import { SeniorPicker } from './SeniorPicker';
 import { SubtaskCardView } from './SubtaskCardView';
 import { BackgroundJobChip, BackgroundJobsBar } from './BackgroundJobsBar';
 import { ForegroundShellBar } from './ForegroundShellBar';
@@ -2144,6 +2145,7 @@ export const ChatFeed: React.FC<ChatFeedProps> = ({
                 </div>
               </div>
             ) : null}
+            <SeniorPicker />
             <GateOptionsBar />
             <ChatInputBar
               inputValue={inputValue}
