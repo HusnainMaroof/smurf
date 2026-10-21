@@ -139,8 +139,8 @@
       "isolateGit": true,
       "parse": "text",
       "run": {
-        "readonly": "cline -t {timeoutSec} -m {model} --json \"$(cat '{promptFile}')\" < /dev/null",
-        "edit": "cline -t {timeoutSec} -m {model} --json \"$(cat '{promptFile}')\" < /dev/null"
+        "readonly": "cline -t {timeoutSec} -m {model} --json \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'",
+        "edit": "cline -t {timeoutSec} -m {model} --json \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'"
       },
       "discover": {
         "url": "https://api.cline.bot/api/v1/ai/cline/models",
@@ -156,8 +156,8 @@
       "parse": "text",
       "answerAfter": "^> (?:plan|build|code|ask) \u00b7 .*$",
       "run": {
-        "readonly": "XDG_DATA_HOME=\"$HOME/.opencode-free\" opencode run --standalone --agent plan -m {model} --title '{title}' \"$(cat '{promptFile}')\" < /dev/null",
-        "edit": "XDG_DATA_HOME=\"$HOME/.opencode-free\" opencode run --standalone --agent build --auto -m {model} --title '{title}' \"$(cat '{promptFile}')\" < /dev/null"
+        "readonly": "XDG_DATA_HOME=\"$HOME/.opencode-free\" opencode run --standalone --agent plan -m {model} --title '{title}' \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'",
+        "edit": "XDG_DATA_HOME=\"$HOME/.opencode-free\" opencode run --standalone --agent build --auto -m {model} --title '{title}' \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'"
       },
       "discover": {
         "cmd": "XDG_DATA_HOME=\"$HOME/.opencode-free\" opencode models",
@@ -173,8 +173,8 @@
       "parse": "text",
       "answerAfter": "^> (?:plan|build|code|ask) \u00b7 .*$",
       "run": {
-        "readonly": "kilo run --agent plan -m {model} --title '{title}' \"$(cat '{promptFile}')\" < /dev/null",
-        "edit": "kilo run --auto --agent code -m {model} --title '{title}' \"$(cat '{promptFile}')\" < /dev/null"
+        "readonly": "kilo run --agent plan -m {model} --title '{title}' \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'",
+        "edit": "kilo run --auto --agent code -m {model} --title '{title}' \"Follow the instructions given on stdin. ({title})\" < '{promptFile}'"
       },
       "discover": {
         "cmd": "kilo models",

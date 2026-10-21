@@ -25,6 +25,8 @@ export function classify(out: string, code: number | null, timedOut: boolean, ms
   if (/rate.?limit|\b429\b|quota exceeded|too many requests|insufficient.?credits/i.test(t)) return "rate_limit";
   if (/re-?authenticat|unauthori[sz]ed|\b401\b|\b403\b|invalid api key|not logged in|login required/i.test(t)) return "auth";
   if (/model not found|unknown model|no such model|model .{0,60} (is not|not) (available|supported)|invalid model|not found for account|no endpoints found/i.test(t)) return "not_found";
+  // the shell could not even start the tool (e.g. a prompt over Windows' 32 KB command-line limit)
+  if (/argument list too long/i.test(t)) return "crash";
   if (!hasAnswer && ms < 120_000) return "crash";
   if (!hasAnswer) return "bad_output";
   return undefined;
