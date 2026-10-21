@@ -27,6 +27,7 @@ Always run both `npx tsc --noEmit` and `npm test` before you say a change is don
 | `src/models.ts` | Model discovery, cooldowns, quotas, billing |
 | `src/adapters/` | `cli.ts` (agent CLIs, prompt on stdin), `api.ts` (OpenAI-compatible APIs), `openhands.ts` (ACP), `mock.ts` (tests), `common.ts` (failure classes, report file name) |
 | `src/workspace.ts` | Worktrees, branches, diff/scope, revert, integrate |
+| `src/ship.ts` | Owner side of a run: `summary`, `merge` (checks re-run on the merged code), `run-tasks --check` |
 | `src/vault.ts` | Reads and writes the vault notes |
 | `config/orchestrator.json` | Providers, router weights, limits, budget. `config/free-only.json` is an override for free models only (`ORCH_CONFIG=config/free-only.json`) |
 | `config/rules/*.md` | Strict rules every worker gets (edit / readonly) |

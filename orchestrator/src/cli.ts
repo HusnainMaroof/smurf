@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Engine, validate } from "./engine.ts";
+import { checkBatch, mergeRun, runSummary } from "./ship.ts";
 import { NODE_TYPES } from "./nodes/index.ts";
 import { buildCodeGraph } from "./graph.ts";
 import { runBenchmarks, selftest } from "./bench.ts";
@@ -15,12 +16,16 @@ const HELP = `orch: a senior model managing a team of coding agents
                                          register a project (vault/Projects/N.md)
   orch run <project> "<request>" [--workflow default]
                                          start a run; it stops when it needs you
-  orch run-tasks <project> <tasks.json> ["<request>"]
-                                         run preset tasks without senior planning (workflow "tasks")
+  orch run-tasks <project> <tasks.json> ["<request>"] [--check]
+                                         run preset tasks without senior planning (workflow "tasks");
+                                         --check only reports approvals, file overlaps and the order
   orch resume <run> [--choice C] [--note "..."]
                                          answer a waiting run (approve, reject, accept, retry,
                                          reassign, skip, abort, answer) and continue
   orch status [run]                      runs, or one run's tasks and what it waits for
+  orch summary <run>                     one screen: tasks, evidence, question, diff stat, follow-ups, next step
+  orch merge <run> [--no-test]           merge orch/<run> into the base branch; commits only if every
+                                         accepted task's checks pass on the merged code (never pushes)
   orch models [--refresh]                live models per provider (tier, cooldown)
   orch route <category> [--risk low|medium|high] [--mode edit|readonly] [--tier T]
                                          router ranking with the six signals
@@ -117,6 +122,13 @@ async function main() {
       if (ids.size !== tasks.length) throw new Error(`${file}: task ids must be unique`);
       const bad = tasks.flatMap((t) => t.deps.filter((d: string) => !ids.has(d) || d === t.id).map((d: string) => `${t.id} -> ${d}`));
       if (bad.length) throw new Error(`${file}: deps must name other tasks in the file: ${bad.join(", ")}`);
+      if (argv.includes("--check")) {
+        const r = checkBatch(engine.vault.project(project), tasks);
+        console.log(r.lines.join("\n"));
+        console.log(r.ok ? "\nbatch ok (lines with ! are worth a look)" : "\nfix the problems above before running");
+        if (!r.ok) process.exitCode = 1;
+        break;
+      }
       printEvents(engine);
       const request = words.join(" ") || `Preset tasks: ${tasks.map((t) => t.id).join(", ")}`;
       summary(await engine.startWith({ project: engine.vault.project(project), request, workflow: flag("--workflow") || "tasks", tasks }));
@@ -135,6 +147,17 @@ async function main() {
         const done = s.tasks.filter((t) => t.status === "accepted").length;
         console.log(`${s.status.padEnd(8)} ${s.id.padEnd(52)} ${done}/${s.tasks.length} tasks  $${s.costUsd.toFixed(3)}${s.waiting ? `  waits: ${s.waiting.kind}` : ""}`);
       }
+      break;
+    }
+    case "summary": {
+      if (!args[0]) throw new Error("usage: orch summary <run>");
+      console.log(runSummary(engine, engine.vault.loadState(args[0])));
+      break;
+    }
+    case "merge": {
+      if (!args[0]) throw new Error("usage: orch merge <run> [--no-test]");
+      const r = await mergeRun(engine.vault.loadState(args[0]), { test: !argv.includes("--no-test"), log: (l) => console.log(l) });
+      if (!r.ok) process.exitCode = 1;
       break;
     }
     case "models": {

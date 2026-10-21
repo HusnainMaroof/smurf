@@ -9,6 +9,10 @@ The orchestrator in `orchestrator/` is how work gets done here: you act as the s
 precise tasks, and free agents do them. Read `AGENTS.md` at the repo root for the code layout and
 conventions before changing the engine.
 
+Two focused skills cover the repeated routines: `orch-ship` (batch -> check -> run -> summary ->
+review -> merge) and `orch-fix` (real run problem -> engine fix + test). Use them instead of
+re-deriving the steps.
+
 All commands run inside `orchestrator/`. Prefix with `ORCH_CONFIG=config/free-only.json` to use
 free models only (the owner's default; no paid Claude/Codex/OpenAI usage).
 
@@ -20,6 +24,9 @@ free models only (the owner's default; no paid Claude/Codex/OpenAI usage).
 | You already know the tasks (best quality) | `node src/cli.ts run-tasks <project> tasks/<batch>.json "<title>"` |
 | The run waits for the owner | `node src/cli.ts resume <run> --choice <option> [--note "..."]` |
 | What is running / waiting | `node src/cli.ts status [run]` |
+| One-screen view of a run (tasks, evidence, question, diff stat, follow-ups, next step) | `node src/cli.ts summary <run>` |
+| Check a batch before running it | `node src/cli.ts run-tasks <project> <file> --check` |
+| Merge a finished run (checks re-run on the merged code; commits only if all pass) | `node src/cli.ts merge <run>` |
 | Register a repo | `node src/cli.ts init <repo> --name <n> --allow "npm test,npx tsc" --link node_modules` |
 
 Runs take minutes: start them in the background and wait for the completion notice; do not poll.
@@ -68,9 +75,11 @@ Accepted work is on branch `orch/<run>`; nothing touches `main` until you merge.
 
 1. `git diff --stat main...orch/<run>` then read the diff of each file. Check the agent did what
    the brief asked and nothing more; the review score is a hint, not proof.
-2. Merge with `git merge --no-ff orch/<run>`, then check that files outside the batch did not
+2. `node src/cli.ts merge <run>`: merges without committing, re-runs every accepted task's checks
+   on the merged code, and commits only if all pass (otherwise the merge is undone). It refuses a
+   dirty tree or the wrong branch.
+3. If the run's branch is older than other merges, also check files outside the batch did not
    change: `git diff HEAD^1 HEAD --stat -- <paths the batch should not touch>`.
-3. Run the project's build and tests on `main` after the merge.
 4. Turn the report's Follow-ups into the next batch, or note them for the owner.
 5. Commit after big changes; never push unless the owner says so.
 

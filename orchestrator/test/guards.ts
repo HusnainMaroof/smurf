@@ -7,6 +7,7 @@ import path from "node:path";
 import { loadConfig } from "../src/config.ts";
 import { Engine } from "../src/engine.ts";
 import { blockedLines } from "../src/nodes/agent.ts";
+import { mergeRun, runSummary } from "../src/ship.ts";
 import { git, writeJson } from "../src/util.ts";
 
 for (const l of ["BLOCKED: none.", "- BLOCKED: none — finding established.", "**BLOCKED:** none", "BLOCKED: N/A", "BLOCKED: no", "BLOCKED: cannot write `.orch-report.md` — plan mode"])
@@ -63,5 +64,25 @@ assert.equal(git(repo, "cat-file", "-e", `${s.integrationBranch}:notes.txt`).ok,
 const report = fs.readFileSync(engine.vault.p(`Runs/${s.id}/report.md`), "utf8");
 assert.match(report, /g1\*\* \(agent, left undone\): did not update check\.js/);
 assert.match(report, /g1\*\* \(engine\): undid out-of-scope edits to `notes\.txt`/);
+
+// owner side: one-screen summary, then a merge that commits only when the checks pass on the merged code
+const sum = runSummary(engine, s);
+assert.match(sum, /DONE {2}1\/1 accepted/);
+assert.match(sum, /undid notes\.txt/);
+assert.match(sum, /next: .*orch merge /);
+const logs: string[] = [];
+fs.writeFileSync(path.join(repo, "check.js"), "process.exit(1);\n"); // dirty tree: refused before touching anything
+assert.equal((await mergeRun(s, { test: true, log: (l) => logs.push(l) })).ok, false);
+assert.match(logs.at(-1)!, /uncommitted changes/);
+git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "owner breaks the check on main");
+assert.equal((await mergeRun(s, { test: true, log: (l) => logs.push(l) })).ok, false, "failing check on the merged code");
+assert.match(logs.at(-1)!, /check failed on the merged code, merge undone/);
+assert.equal(git(repo, "status", "--porcelain").out, "", "merge undone, tree clean");
+git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "revert", "--no-edit", "HEAD");
+const merged = await mergeRun(s, { test: true, log: (l) => logs.push(l) });
+assert.ok(merged.ok, logs.join("\n"));
+assert.match(git(repo, "show", "main:a.js").out, /= 2/);
+assert.equal((await mergeRun(s, { test: true, log: (l) => logs.push(l) })).ok, false);
+assert.match(logs.at(-1)!, /already merged/);
 
 console.log(`guards PASS (run ${s.id})`);
