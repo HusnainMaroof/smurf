@@ -268,6 +268,9 @@ export function canvasToCompiler(
       const data: Record<string, unknown> = {
         label: step.name || (nodeType === 'human_gate' ? 'Human Approval' : 'Check'),
       };
+      if (typeof step.agent === 'string' && step.agent.length > 0) {
+        data.agent = step.agent;
+      }
       if (nodeType === 'check' && step.description) {
         data.prompt = step.description;
       }
