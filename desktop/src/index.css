@@ -1,0 +1,354 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Hanken Grotesk", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+  
+  --color-tertiary-fixed: #e0e2e6;
+  --color-on-secondary-fixed-variant: #454748;
+  --color-on-tertiary-fixed: #191c1f;
+  --color-surface-variant: #f3f3f3;
+  --color-surface-container-lowest: #ffffff;
+  --color-tertiary-container: #191c1f;
+  --color-on-surface: #1a1c1c;
+  --color-outline: #e5e7eb;
+  --color-on-primary-container: #858383;
+  --color-on-tertiary-container: #818488;
+  --color-tertiary: #000000;
+  --color-on-primary-fixed: #1c1b1b;
+  --color-surface-container: #f9f9f9;
+  --color-secondary: #5c5f60;
+  --color-surface-container-high: #f0f0f0;
+  --color-tertiary-fixed-dim: #c4c7ca;
+  --color-secondary-fixed-dim: #c5c7c8;
+  --color-secondary-fixed: #e1e3e4;
+  --color-primary-fixed: #e5e2e1;
+  --color-on-background: #1a1c1c;
+  --color-surface-container-low: #f7f7f7;
+  --color-primary-fixed-dim: #c8c6c5;
+  --color-on-surface-variant: #71717a;
+  --color-secondary-container: #f4f4f5;
+  --color-outline-variant: #e5e7eb;
+  --color-error: #ba1a1a;
+  --color-on-secondary: #ffffff;
+  --color-surface-dim: #f3f4f6;
+  --color-on-error-container: #93000a;
+  --color-surface-bright: #ffffff;
+  --color-on-primary-fixed-variant: #474746;
+  --color-surface-tint: #000000;
+  --color-inverse-surface: #2f3131;
+  --color-surface-container-highest: #e2e2e2;
+  --color-on-tertiary: #ffffff;
+  --color-primary: #000000;
+  --color-inverse-on-surface: #f0f1f1;
+  --color-on-secondary-container: #626566;
+  --color-primary-container: #000000;
+  --color-background: #ffffff;
+  --color-inverse-primary: #c8c6c5;
+  --color-on-error: #ffffff;
+  --color-on-secondary-fixed: #191c1d;
+  --color-error-container: #ffdad6;
+  --color-on-tertiary-fixed-variant: #44474a;
+  --color-surface: #f9f9f9;
+  --color-on-primary: #ffffff;
+  --color-status-success-fg: #065f46;
+  --color-status-success-bg: #ecfdf5;
+  --color-status-success-border: #a7f3d0;
+  --color-status-warning-fg: #92400e;
+  --color-status-warning-bg: #fffbeb;
+  --color-status-warning-border: #fde68a;
+  --color-status-neutral-fg: #525252;
+  --color-status-neutral-bg: #f5f5f5;
+  --color-status-neutral-border: #e5e5e5;
+  --color-status-error-fg: #93000a;
+  --color-status-error-bg: #ffdad6;
+  --color-status-error-border: #fecaca;
+}
+
+body {
+  font-family: 'Hanken Grotesk', sans-serif;
+  background-color: var(--color-background, #ffffff);
+  color: var(--color-on-background, #1a1c1c);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography preference layer.
+   Components still use many Tailwind fixed-size utilities today, so this layer maps
+   those existing utilities onto semantic size tiers while preserving hierarchy. */
+[data-font-size="small"] {
+  --app-text-2xs: 9px;
+  --app-text-xs: 10px;
+  --app-text-sm: 12px;
+  --app-text-base: 13px;
+  --app-text-lg: 16px;
+  --app-text-xl: 18px;
+}
+
+[data-font-size="default"] {
+  --app-text-2xs: 10px;
+  --app-text-xs: 11px;
+  --app-text-sm: 13px;
+  --app-text-base: 14px;
+  --app-text-lg: 18px;
+  --app-text-xl: 20px;
+}
+
+[data-font-size="large"] {
+  --app-text-2xs: 11px;
+  --app-text-xs: 12px;
+  --app-text-sm: 14px;
+  --app-text-base: 15px;
+  --app-text-lg: 20px;
+  --app-text-xl: 22px;
+}
+
+[data-font-size="xlarge"] {
+  --app-text-2xs: 12px;
+  --app-text-xs: 13px;
+  --app-text-sm: 15px;
+  --app-text-base: 16px;
+  --app-text-lg: 22px;
+  --app-text-xl: 24px;
+}
+
+[data-font-size="xxlarge"] {
+  --app-text-2xs: 13px;
+  --app-text-xs: 14px;
+  --app-text-sm: 16px;
+  --app-text-base: 17px;
+  --app-text-lg: 24px;
+  --app-text-xl: 26px;
+}
+
+[data-font-size] {
+  font-size: var(--app-text-base);
+}
+
+/* Compatibility bridge for existing fixed Tailwind text utilities.
+   Keep icons out of this bridge; LegacyIcon adds .clutch-icon explicitly. */
+[data-font-size] :where(.text-\[8px\], .text-\[9px\], .text-\[9\.5px\], .text-\[10px\], .text-\[10\.5px\]):not(.clutch-icon) {
+  font-size: var(--app-text-2xs);
+}
+
+[data-font-size] :where(.text-\[11px\], .text-\[11\.5px\], .text-xs):not(.clutch-icon) {
+  font-size: var(--app-text-xs);
+}
+
+[data-font-size] :where(.text-\[12px\], .text-\[12\.5px\], .text-\[13px\], .text-sm):not(.clutch-icon) {
+  font-size: var(--app-text-sm);
+}
+
+[data-font-size] :where(.text-base, .text-\[14px\], .text-\[15px\]):not(.clutch-icon) {
+  font-size: var(--app-text-base);
+}
+
+[data-font-size] :where(.text-lg):not(.clutch-icon) {
+  font-size: var(--app-text-lg);
+}
+
+[data-font-size] :where(.text-xl, .text-\[18px\], .text-\[20px\], .text-\[22px\], .text-\[24px\]):not(.clutch-icon) {
+  font-size: var(--app-text-xl);
+}
+
+/* Custom Scrollbars */
+.sidebar-scroll {
+  overflow-x: hidden;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #e2e2e2;
+  border-radius: 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
+
+@keyframes session-row-loading {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.session-row-loading-bar {
+  animation: session-row-loading 1.1s ease-in-out infinite;
+}
+
+/* Terminal Scrolling style */
+.terminal-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.terminal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.terminal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes subtle-pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes progress-loading {
+  0% { left: -30%; width: 30%; }
+  50% { left: 30%; width: 50%; }
+  100% { left: 100%; width: 30%; }
+}
+
+.animate-progress-loading {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  animation: progress-loading 1.8s infinite ease-in-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-up {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes typing-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+/* Design canvas — Stitch-like craft / draw */
+@keyframes design-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes design-shimmer-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@keyframes design-draw-reveal {
+  from { clip-path: inset(0 0 100% 0); opacity: 0.55; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+@keyframes design-skeleton-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes design-gradient-breathe {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-design-card-in {
+  animation: design-card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-design-shimmer-sweep {
+  animation: design-shimmer-sweep 1.6s ease-in-out infinite;
+}
+
+.animate-design-draw-reveal {
+  animation: design-draw-reveal 1.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-design-skeleton-pulse {
+  animation: design-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.design-craft-surface {
+  background: linear-gradient(120deg, #f8fafc 0%, #eef2ff 40%, #f5f3ff 70%, #f8fafc 100%);
+  background-size: 200% 200%;
+  animation: design-gradient-breathe 3.2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out both;
+}
+
+.animate-scale-up {
+  animation: scale-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-typing-pulse {
+  animation: typing-pulse 1.2s ease-out infinite;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-up,
+  .animate-typing-pulse,
+  .animate-subtle-pulse,
+  .animate-shimmer,
+  .animate-progress-loading,
+  .animate-design-card-in,
+  .animate-design-shimmer-sweep,
+  .animate-design-draw-reveal,
+  .animate-design-skeleton-pulse,
+  .design-craft-surface {
+    animation: none !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1.5s;
+  }
+}
+
+
+/* xterm in multi-lane grid — force viewport to match flex cell */
+.terminal-xterm-host {
+  overflow: hidden;
+}
+
+.terminal-xterm-host .xterm {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-xterm-host .xterm-viewport {
+  width: 100% !important;
+  overflow-y: auto;
+}
+

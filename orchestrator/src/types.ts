@@ -1,0 +1,195 @@
+// Shared types. The engine, the CLI and (later) the desktop app all speak these.
+
+export type Mode = "edit" | "readonly";
+export type Risk = "low" | "medium" | "high";
+export type Tier = "light" | "standard" | "strong" | "premium";
+export const TIERS: Tier[] = ["light", "standard", "strong", "premium"];
+export const CATEGORIES = ["coding", "debugging", "testing", "research", "review", "architecture", "docs"] as const;
+export type Category = (typeof CATEGORIES)[number];
+export type Failure = "rate_limit" | "auth" | "not_found" | "crash" | "timeout" | "stalled" | "bad_output";
+export type Terse = "off" | "lite" | "full" | "ultra";
+
+export interface ModelInfo {
+  key: string; // "<adapter>:<model>"
+  adapter: string;
+  model: string;
+  tier: Tier;
+  free: boolean;
+  contextLength?: number;
+  priceIn?: number; // USD per 1M input tokens
+  priceOut?: number;
+  modes: Mode[];
+}
+
+export interface RunRequest {
+  model: string;
+  mode: Mode;
+  prompt: string;
+  cwd: string;
+  timeoutMs: number;
+  idleMs?: number; // kill when the agent prints nothing for this long
+  killMarkers?: string[]; // strings unique to this agent's command line (see killTree)
+  logFile: string;
+  title: string;
+  // edit mode for API models (they cannot touch files): files they may rewrite
+  allowedFiles?: string[];
+}
+
+export interface RunResult {
+  ok: boolean;
+  text: string; // the agent's final answer / report
+  exitCode: number | null;
+  latencyMs: number;
+  tokensIn: number;
+  tokensOut: number;
+  costUsd: number;
+  failure?: Failure;
+  filesWritten?: string[];
+}
+
+export interface Adapter {
+  id: string;
+  kind: "cli" | "api" | "mock";
+  modes: Mode[];
+  available(): Promise<boolean>;
+  discover(): Promise<ModelInfo[]>;
+  run(req: RunRequest): Promise<RunResult>;
+}
+
+export interface Check {
+  name: string;
+  cmd: string;
+  // measure: the last number the command prints is a metric (e.g. latency ms)
+  measure?: boolean;
+  expect?: "pass" | "lower" | "higher";
+}
+
+export interface Evidence {
+  changed: { file: string; status: string; inScope: boolean }[];
+  scopeOk: boolean;
+  checks: { name: string; cmd: string; ok: boolean; exitCode: number | null; value?: number; baseline?: number; tail: string }[];
+  checksOk: boolean;
+  diffLines: number;
+  diffFile: string;
+}
+
+export interface Review {
+  model: string;
+  score: number; // 0..100
+  verdict: string;
+  findings: { severity: string; file?: string; issue: string }[];
+}
+
+export type Decision = "accept" | "retry" | "reassign" | "escalate";
+
+export interface Attempt {
+  n: number;
+  model: string; // ModelInfo key
+  startedAt: string;
+  latencyMs: number;
+  exitCode: number | null;
+  failure?: Failure;
+  costUsd: number;
+  tokensIn: number;
+  tokensOut: number;
+  reportFile: string;
+  blocked: string[];
+  evidence?: Evidence;
+  review?: Review;
+  decision?: Decision;
+  reason?: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  category: Category;
+  risk: Risk;
+  brief: string;
+  files: string[]; // allowed files / folders (folder ends with /) / globs
+  deps: string[];
+  checks: Check[];
+  status: "pending" | "running" | "accepted" | "failed" | "skipped";
+  attempts: Attempt[];
+  excluded: string[]; // model keys not to use again on this task
+  reassigns: number;
+  minTier?: Tier;
+  candidates?: { key: string; score: number; why: string }[];
+  critique?: string;
+  branch?: string;
+  worktree?: string;
+  baseline?: Record<string, number>;
+  approvalReason?: string;
+  forceModel?: string; // benchmarks: evaluate exactly this model
+  timeoutMin?: number; // overrides the agent profile
+  reportMatch?: string[]; // read-only tasks: regexes the report must match
+}
+
+export interface Project {
+  name: string;
+  repo: string;
+  baseBranch: string;
+  allowedCommands: string[]; // check commands must start with one of these, else owner approval
+  linkDirs: string[]; // folders shared into worktrees by junction (node_modules, .venv)
+  context: string; // free text from the project note
+}
+
+export interface Waiting {
+  kind: "approval" | "escalation" | "question";
+  taskId?: string;
+  question: string;
+  options: string[];
+}
+
+export interface RunState {
+  id: string;
+  project: Project;
+  request: string;
+  workflow: string;
+  status: "running" | "waiting" | "done" | "failed" | "aborted";
+  waiting?: Waiting;
+  input?: { choice: string; note?: string }; // the owner's answer to `waiting`
+  cursor: string;
+  visits: Record<string, number>;
+  understanding?: { goal: string; constraints: string[]; successCriteria: string[]; assumptions: string[]; questions: string[] };
+  tasks: Task[];
+  currentTask?: string;
+  integrationBranch: string;
+  integrationWorktree?: string;
+  costUsd: number; // billed (metered APIs), counts against the budget
+  usageUsd?: number; // equivalent cost of subscription CLIs, informational
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+}
+
+/* ---- workflow graph (n8n-shaped, so the desktop app can draw and edit it) ---- */
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  name?: string;
+  params?: Record<string, unknown>;
+  position?: [number, number];
+}
+export interface WorkflowEdge {
+  from: string;
+  port?: string; // output port of `from`, default "out"
+  to: string;
+}
+export interface Workflow {
+  name: string;
+  description?: string;
+  start: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
+export interface ParamSpec {
+  name: string;
+  type: "string" | "number" | "boolean" | "select";
+  default?: unknown;
+  options?: string[];
+  description: string;
+}
+
+export const WAIT = "__wait__";

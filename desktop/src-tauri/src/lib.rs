@@ -1,0 +1,404 @@
+//! Tauri shell — dev: `uv run uvicorn`; release: PyInstaller sidecar (M0-05 / M4-06).
+
+use std::net::TcpStream;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use std::thread;
+use std::time::{Duration, Instant};
+
+use tauri::{AppHandle, Manager, RunEvent};
+#[cfg(not(debug_assertions))]
+use tauri_plugin_shell::ShellExt;
+
+#[cfg(debug_assertions)]
+use std::process::{Command, Stdio};
+#[cfg(not(debug_assertions))]
+use std::process::{Command, Stdio};
+#[cfg(not(debug_assertions))]
+use tauri_plugin_shell::process::CommandChild;
+
+#[cfg(debug_assertions)]
+enum SidecarChild {
+    Dev(std::process::Child),
+}
+
+#[cfg(not(debug_assertions))]
+enum SidecarChild {
+    Release(CommandChild),
+    Patched(std::process::Child),
+}
+
+struct SidecarState(Mutex<Option<SidecarChild>>);
+
+struct SidecarAuthState {
+    token: String,
+}
+
+mod directory_picker;
+mod sidecar_patch;
+
+#[tauri::command]
+fn clutch_host_os() -> &'static str {
+    std::env::consts::OS
+}
+
+#[tauri::command]
+fn clutch_pick_directory(
+    title: Option<String>,
+    default_path: Option<String>,
+    show_hidden: Option<bool>,
+) -> Option<String> {
+    directory_picker::pick_directory(
+        title.as_deref().unwrap_or("Select folder"),
+        default_path.as_deref(),
+        show_hidden.unwrap_or(true),
+    )
+    .map(|path| path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn clutch_e2e_sandbox() -> Option<String> {
+    std::env::var("CLUTCH_E2E_SANDBOX").ok()
+}
+
+#[tauri::command]
+fn clutch_sidecar_token(state: tauri::State<SidecarAuthState>) -> String {
+    state.token.clone()
+}
+
+#[tauri::command]
+fn clutch_cpu_arch() -> String {
+    std::env::consts::ARCH.to_string()
+}
+
+#[tauri::command]
+fn clutch_apply_sidecar_patch(app: AppHandle) -> Result<(), String> {
+    restart_sidecar(&app)?;
+    sidecar_patch::clear_needs_restart(&app)?;
+    Ok(())
+}
+
+/// Open a local file/URL with the OS default app (HTML → system browser).
+#[tauri::command]
+fn clutch_open_path(path: String) -> Result<(), String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("empty path".into());
+    }
+    let target = std::path::Path::new(trimmed);
+    if !target.is_absolute() {
+        return Err("path must be absolute".into());
+    }
+    if !target.exists() {
+        return Err(format!("path does not exist: {trimmed}"));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // Empty window title is required: `start "" path`
+        Command::new("cmd")
+            .args(["/C", "start", "", trimmed])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[cfg(debug_assertions)]
+const SIDECAR_PORT: u16 = 8124;
+#[cfg(not(debug_assertions))]
+const SIDECAR_PORT: u16 = 8123;
+
+fn bundle_sidecar_path() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let macos_dir = exe.parent()?;
+    let sidecar = macos_dir.join("orchestrator");
+    if sidecar.is_file() {
+        Some(sidecar)
+    } else {
+        None
+    }
+}
+
+/// Release builds: kill orphaned sidecar processes from a prior crash or incomplete quit.
+#[cfg(not(debug_assertions))]
+fn kill_stale_bundle_sidecars() {
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(sidecar) = bundle_sidecar_path() {
+            let path = sidecar.to_string_lossy().into_owned();
+            let _ = Command::new("pkill").args(["-f", &path]).status();
+        }
+        // Also clear Application Support hotpatch binary if still running.
+        if let Ok(home) = std::env::var("HOME") {
+            let patch = PathBuf::from(home)
+                .join("Library/Application Support/clutch/patches/orchestrator");
+            if patch.is_file() {
+                let path = patch.to_string_lossy().into_owned();
+                let _ = Command::new("pkill").args(["-f", &path]).status();
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(sidecar) = bundle_sidecar_path() {
+            if let Some(name) = sidecar.file_name().and_then(|n| n.to_str()) {
+                let _ = Command::new("taskkill")
+                    .args(["/IM", name, "/F"])
+                    .status();
+            }
+        }
+    }
+
+    thread::sleep(Duration::from_millis(200));
+}
+
+#[cfg(debug_assertions)]
+fn kill_stale_bundle_sidecars() {}
+
+fn prepare_sidecar_launch(port: u16) {
+    kill_stale_bundle_sidecars();
+    free_sidecar_port(port);
+    thread::sleep(Duration::from_millis(200));
+    free_sidecar_port(port);
+}
+
+fn free_sidecar_port(port: u16) {
+    #[cfg(target_os = "macos")]
+    {
+        let script =
+            format!("lsof -ti tcp:{port} -sTCP:LISTEN | xargs kill -9 2>/dev/null || true");
+        let _ = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(script)
+            .status();
+        thread::sleep(Duration::from_millis(400));
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(output) = std::process::Command::new("netstat")
+            .args(["-ano", "-p", "tcp"])
+            .output()
+        {
+            let suffix = format!(":{port}");
+            for line in String::from_utf8_lossy(&output.stdout).lines() {
+                let columns: Vec<_> = line.split_whitespace().collect();
+                if columns.len() >= 5
+                    && columns[1].ends_with(&suffix)
+                    && columns[3].eq_ignore_ascii_case("LISTENING")
+                {
+                    let _ = std::process::Command::new("taskkill")
+                        .args(["/PID", columns[4], "/T", "/F"])
+                        .status();
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(400));
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            clutch_pick_directory,
+            clutch_host_os,
+            clutch_e2e_sandbox,
+            clutch_sidecar_token,
+            clutch_cpu_arch,
+            clutch_apply_sidecar_patch,
+            clutch_open_path,
+            sidecar_patch::clutch_sidecar_patch_status,
+            sidecar_patch::clutch_sidecar_patch_pending,
+            sidecar_patch::clutch_download_sidecar_patch,
+        ])
+        .manage(SidecarState(Mutex::new(None)));
+
+    #[cfg(feature = "e2e-testing")]
+    {
+        builder = builder.plugin(tauri_plugin_playwright::init_with_config(
+            tauri_plugin_playwright::PluginConfig::new()
+                .socket_path("/tmp/clutch-tauri-playwright.sock"),
+        ));
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        builder = builder
+            .plugin(tauri_plugin_process::init())
+            .plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
+        .setup(|app| {
+            prepare_sidecar_launch(SIDECAR_PORT);
+            let token = uuid::Uuid::new_v4().to_string();
+            app.manage(SidecarAuthState {
+                token: token.clone(),
+            });
+            let child = spawn_sidecar(app.handle(), &token)?;
+            *app.state::<SidecarState>().0.lock().unwrap() = Some(child);
+            wait_for_sidecar_port(SIDECAR_PORT, Duration::from_secs(60))?;
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(handle_run_event);
+}
+
+fn handle_run_event(app: &AppHandle, event: RunEvent) {
+    match event {
+        RunEvent::ExitRequested { .. } => terminate_sidecar(app),
+        RunEvent::Exit => {
+            terminate_sidecar(app);
+            free_sidecar_port(SIDECAR_PORT);
+        }
+        #[cfg(target_os = "macos")]
+        RunEvent::Reopen { .. } => focus_main_window(app),
+        _ => {}
+    }
+}
+
+fn terminate_sidecar(app: &AppHandle) {
+    let state = app.state::<SidecarState>();
+    let mut guard = state.0.lock().unwrap();
+    let Some(child) = guard.take() else {
+        return;
+    };
+
+    match child {
+        #[cfg(debug_assertions)]
+        SidecarChild::Dev(mut child) => {
+            let _ = child.kill();
+        }
+        #[cfg(not(debug_assertions))]
+        SidecarChild::Release(child) => {
+            let _ = child.kill();
+        }
+        #[cfg(not(debug_assertions))]
+        SidecarChild::Patched(mut child) => {
+            let _ = child.kill();
+        }
+    }
+}
+
+fn restart_sidecar(app: &AppHandle) -> Result<(), String> {
+    terminate_sidecar(app);
+    prepare_sidecar_launch(SIDECAR_PORT);
+    let token = app.state::<SidecarAuthState>().token.clone();
+    let child = spawn_sidecar(app, &token)?;
+    *app.state::<SidecarState>().0.lock().unwrap() = Some(child);
+    wait_for_sidecar_port(SIDECAR_PORT, Duration::from_secs(60))?;
+    Ok(())
+}
+
+fn focus_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn spawn_sidecar(app: &tauri::AppHandle, token: &str) -> Result<SidecarChild, String> {
+    #[cfg(debug_assertions)]
+    {
+        let _ = app;
+        return spawn_dev_sidecar(token).map(SidecarChild::Dev);
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        if let Some(patch_bin) = sidecar_patch::resolved_patch_binary(app) {
+            let child = Command::new(&patch_bin)
+                .env("CLUTCH_SIDECAR_TOKEN", token)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("无法启动补丁 Sidecar：{e}"))?;
+            return Ok(SidecarChild::Patched(child));
+        }
+
+        let (_rx, child) = app
+            .shell()
+            .sidecar("orchestrator")
+            .map_err(|e| format!("无法加载 Sidecar 二进制：{e}"))?
+            .env("CLUTCH_SIDECAR_TOKEN", token)
+            .spawn()
+            .map_err(|e| format!("无法启动 Sidecar：{e}"))?;
+        return Ok(SidecarChild::Release(child));
+    }
+}
+
+#[cfg(debug_assertions)]
+fn orchestrator_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../services/orchestrator")
+}
+
+#[cfg(debug_assertions)]
+fn spawn_dev_sidecar(token: &str) -> Result<std::process::Child, String> {
+    let dir = orchestrator_dir();
+    if !dir.join("src/main.py").is_file() {
+        return Err(format!(
+            "未找到 Sidecar 目录：{}。请从仓库根目录运行 pnpm tauri dev",
+            dir.display()
+        ));
+    }
+
+    let uv = std::env::var("CLUTCH_UV_BIN").unwrap_or_else(|_| "uv".to_string());
+    let mut cmd = Command::new(uv);
+    cmd.args([
+        "run",
+        "uvicorn",
+        "src.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8124",
+    ])
+    .current_dir(&dir)
+    .env("CLUTCH_SIDECAR_TOKEN", token)
+    .stdout(Stdio::null())
+    .stderr(Stdio::null());
+
+    for (key, value) in std::env::vars().filter(|(k, _)| k.starts_with("CLUTCH_")) {
+        if key == "CLUTCH_SIDECAR_TOKEN" {
+            continue;
+        }
+        cmd.env(key, value);
+    }
+
+    cmd.spawn()
+        .map_err(|e| format!("无法启动 Sidecar（请确认已安装 uv）：{e}"))
+}
+
+fn wait_for_sidecar_port(port: u16, timeout: Duration) -> Result<(), String> {
+    let addr = format!("127.0.0.1:{port}");
+    let start = Instant::now();
+    while start.elapsed() < timeout {
+        if TcpStream::connect(&addr).is_ok() {
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(400));
+    }
+    Err(format!(
+        "Sidecar 启动超时：{port} 端口不可达。请检查编排服务是否已内嵌或本机 uv 环境"
+    ))
+}

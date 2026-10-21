@@ -1,0 +1,19 @@
+# Smurf: the control plane in Docker. Start the host runner after it:
+#   cd orchestrator && node src/cli.ts runner        (reads SMURF_TOKEN from ../.env via smurf.ps1/sh)
+name: smurf
+
+services:
+  smurf-server:
+    build: ./orchestrator
+    image: smurf-server:latest
+    container_name: smurf-server
+    restart: unless-stopped
+    environment:
+      SMURF_TOKEN: ${SMURF_TOKEN:?set SMURF_TOKEN in .env (run ./smurf.sh setup)}
+    ports:
+      - "127.0.0.1:47821:47821" # loopback only
+    volumes:
+      - smurf-data:/data
+
+volumes:
+  smurf-data:

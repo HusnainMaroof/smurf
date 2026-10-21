@@ -1,0 +1,160 @@
+// Flow-control and human-in-the-loop nodes.
+import fs from "node:fs";
+import path from "node:path";
+import type { NodeType } from "./index.ts";
+import { WAIT } from "../types.ts";
+import { modelLink } from "../vault.ts";
+import { buildCodeGraph } from "../graph.ts";
+import { commandExists, git } from "../util.ts";
+
+export const flowNodes: NodeType[] = [
+  {
+    type: "context.codemap",
+    label: "Code map (Graphify)",
+    group: "flow",
+    description: "Refreshes the project's Graphify code map in vault/Code/<project> (AST only, no tokens) so the senior plans from an up-to-date picture. Skips when Graphify is not installed.",
+    ports: ["out"],
+    params: [{ name: "when", type: "select", options: ["stale", "always", "never"], default: "stale", description: "Rebuild only when the repo has new commits, every run, or never." }],
+    async run({ engine, s, params, log }) {
+      if (params.when === "never") return "out";
+      if (!commandExists(engine.cfg.graphify.command)) {
+        log("code map skipped: Graphify not installed (pip install graphifyy)");
+        return "out";
+      }
+      const dir = engine.vault.p("Code", s.project.name);
+      const report = path.join(dir, "GRAPH_REPORT.md");
+      const built = fs.existsSync(report) ? fs.readFileSync(report, "utf8").match(/Built from commit: `([0-9a-f]+)`/)?.[1] : undefined;
+      const head = git(s.project.repo, "rev-parse", "HEAD").out;
+      if (params.when === "stale" && built && head.startsWith(built)) return "out";
+      const g = await buildCodeGraph(s.project, dir, engine.cfg.graphify.command);
+      log(`code map: ${g.summary}`);
+      return "out";
+    },
+  },
+  {
+    type: "human.approval",
+    label: "Owner approval",
+    group: "human",
+    description: "Pauses for the owner when the plan has high-risk tasks or check commands outside the allow-list (or always, if set).",
+    ports: ["approved", "rejected"],
+    params: [{ name: "always", type: "boolean", default: false, description: "Always ask, even for low-risk plans." }],
+    async run({ s, params }) {
+      if (s.input && s.waiting?.kind === "approval") {
+        const ok = s.input.choice === "approve";
+        s.waiting = undefined;
+        s.input = undefined;
+        return ok ? "approved" : "rejected";
+      }
+      const risky = s.tasks.filter((t) => t.approvalReason);
+      if (!risky.length && !params.always) return "approved";
+      const lines = s.tasks.map((t) => `- ${t.id} [${t.category}, ${t.risk}] ${t.title}${t.approvalReason ? ` <- ${t.approvalReason}` : ""}\n    checks: ${t.checks.map((c) => c.cmd).join(" ; ") || "none"}`);
+      s.waiting = { kind: "approval", question: `Approve this plan?\n${lines.join("\n")}`, options: ["approve", "reject"] };
+      return WAIT;
+    },
+  },
+  {
+    type: "tasks.next",
+    label: "Next task",
+    group: "flow",
+    description: "Picks the next pending task whose dependencies are accepted (loop port 'task'); 'done' when none are left. Tasks whose dependencies failed are skipped.",
+    ports: ["task", "done"],
+    params: [],
+    async run({ s, log }) {
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const t of s.tasks.filter((x) => x.status === "pending")) {
+          const dead = t.deps.filter((d) => ["failed", "skipped"].includes(s.tasks.find((x) => x.id === d)?.status ?? ""));
+          if (dead.length) {
+            t.status = "skipped";
+            log(`skip ${t.id}: dependency ${dead.join(", ")} did not finish`);
+            changed = true;
+          }
+        }
+      }
+      const next = s.tasks.find((t) => t.status === "pending" && t.deps.every((d) => s.tasks.find((x) => x.id === d)?.status === "accepted"));
+      if (!next) {
+        s.currentTask = undefined;
+        return "done";
+      }
+      next.status = "running";
+      s.currentTask = next.id;
+      log(`task ${next.id}: ${next.title}`);
+      return "task";
+    },
+  },
+  {
+    type: "human.escalation",
+    label: "Escalate to owner",
+    group: "human",
+    description: "Pauses the run and asks the owner to decide a task the team could not finish: accept as is, retry, reassign, skip, or abort the run.",
+    ports: ["accept", "retry", "reassign", "skip", "abort"],
+    params: [],
+    async run({ s, task }) {
+      const t = task();
+      const a = t.attempts[t.attempts.length - 1];
+      if (s.input && s.waiting?.kind === "escalation") {
+        const choice = s.input.choice;
+        if (s.input.note) t.critique = s.input.note;
+        if (a && choice === "retry") a.decision = "retry";
+        if (a && choice === "reassign" && !t.excluded.includes(a.model)) t.excluded.push(a.model);
+        if (choice === "accept") t.status = "accepted";
+        if (choice === "abort") s.status = "aborted";
+        s.waiting = undefined;
+        s.input = undefined;
+        return choice;
+      }
+      const why = t.approvalReason || a?.reason || "no model available";
+      s.waiting = {
+        kind: "escalation",
+        taskId: t.id,
+        question: `Task ${t.id} "${t.title}" needs you: ${why}.${a ? ` Last attempt ${a.n} by ${a.model}.` : ""} See Runs/${s.id}/${t.id}.md`,
+        options: ["accept", "retry", "reassign", "skip", "abort"],
+      };
+      t.approvalReason = undefined;
+      return WAIT;
+    },
+  },
+  {
+    type: "task.close",
+    label: "Close task",
+    group: "flow",
+    description: "Marks the current task skipped or failed and cleans up its worktree.",
+    ports: ["out"],
+    params: [{ name: "status", type: "select", options: ["skipped", "failed"], default: "skipped", description: "Final status." }],
+    async run({ engine, s, params, task }) {
+      const t = task();
+      t.status = params.status as "skipped" | "failed";
+      engine.ws.removeTask(s, t);
+      return "out";
+    },
+  },
+  {
+    type: "report.final",
+    label: "Final report",
+    group: "output",
+    description: "Writes the run report to the vault (what was done, by which model, evidence, cost) and ends the run.",
+    ports: [],
+    params: [],
+    async run({ engine, s }) {
+      if (s.status === "running") s.status = "done";
+      engine.ws.removeIntegration(s);
+      const rows = s.tasks.map((t) => {
+        const a = t.attempts.find((x) => x.decision === "accept") ?? t.attempts[t.attempts.length - 1];
+        const checks = a?.evidence?.checks.map((c) => `${c.ok ? "PASS" : "FAIL"} ${c.name}${c.value !== undefined ? ` ${c.baseline ?? "?"} -> ${c.value}` : ""}`).join("; ") || "-";
+        return `| ${t.id} | ${t.title.replace(/\|/g, "/")} | ${t.status} | ${a ? modelLink(a.model).replace("|", "\\|") : "-"} | ${t.attempts.length} | ${a?.review?.score ?? "-"} | ${checks} |`;
+      });
+      const accepted = s.tasks.filter((t) => t.status === "accepted").length;
+      const body = [
+        `# Report: ${s.request.split("\n")[0].slice(0, 100)}`,
+        `Status **${s.status}**, ${accepted}/${s.tasks.length} tasks accepted, billed cost $${s.costUsd.toFixed(4)}, subscription usage equivalent $${(s.usageUsd ?? 0).toFixed(4)}.`,
+        `| Task | Title | Status | Model | Attempts | Review | Evidence |\n|---|---|---|---|---|---|---|\n${rows.join("\n")}`,
+        accepted
+          ? `## Next step (owner)\n\nAccepted work is on branch \`${s.integrationBranch}\` in \`${s.project.repo}\`. Nothing was merged into \`${s.project.baseBranch}\`.\n\n\`\`\`\ngit -C "${s.project.repo}" log --oneline ${s.project.baseBranch}..${s.integrationBranch}\ngit -C "${s.project.repo}" diff ${s.project.baseBranch}...${s.integrationBranch}\ngit -C "${s.project.repo}" merge ${s.integrationBranch}\n\`\`\``
+          : "",
+      ].filter(Boolean).join("\n\n");
+      fs.writeFileSync(path.join(engine.vault.runDir(s.id), "report.md"), body + "\n");
+      return "out";
+    },
+  },
+];

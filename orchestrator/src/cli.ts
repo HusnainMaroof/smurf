@@ -1,0 +1,242 @@
+#!/usr/bin/env node
+// orch: command line for the orchestrator. The desktop app will drive the same Engine.
+import fs from "node:fs";
+import path from "node:path";
+import { Engine, validate } from "./engine.ts";
+import { NODE_TYPES } from "./nodes/index.ts";
+import { buildCodeGraph } from "./graph.ts";
+import { runBenchmarks, selftest } from "./bench.ts";
+import { CATEGORIES, type Category, type Mode, type Risk, type RunState, type Tier } from "./types.ts";
+import { git, now, readJson, ROOT, shell } from "./util.ts";
+
+const HELP = `orch: a senior model managing a team of coding agents
+
+  orch init <repo> [--name N] [--base main] [--allow "npm test,npx tsc"] [--link node_modules]
+                                         register a project (vault/Projects/N.md)
+  orch run <project> "<request>" [--workflow default]
+                                         start a run; it stops when it needs you
+  orch resume <run> [--choice C] [--note "..."]
+                                         answer a waiting run (approve, reject, accept, retry,
+                                         reassign, skip, abort, answer) and continue
+  orch status [run]                      runs, or one run's tasks and what it waits for
+  orch models [--refresh]                live models per provider (tier, cooldown)
+  orch route <category> [--risk low|medium|high] [--mode edit|readonly] [--tier T]
+                                         router ranking with the six signals
+  orch nodes [--json]                    node types (ports, params) for workflow editors
+  orch workflow <name> [--json]          validate and show a workflow
+  orch graph <project>                   build the Graphify code map into vault/Code/<project>
+  orch bench [--random N] [--tasks a,b] [--per-task M] [--models k1,k2] [--adapters cline,kilo]
+             [--parallel P] [--seed S] [--premium] [--timeout MIN]
+                                         run benchmark tasks on the least-tested models (router learns)
+  orch bench --selftest                  prove every benchmark fails before and passes with its solution
+  orch import-scorecard <file>           import old scorecard.json attempts as execution records
+
+Smurf (desktop app backend, docs/SMURF.md):
+  orch server [--port 47821] [--host 127.0.0.1] [--data ./smurf-data]
+                                         API for the desktop app (runs in Docker); token: SMURF_TOKEN or <data>/token
+  orch runner [--server ws://127.0.0.1:47821] [--token T]
+                                         host runner: executes runs for the server (token: SMURF_TOKEN)
+
+Categories: ${CATEGORIES.join(", ")}`;
+
+const argv = process.argv.slice(2);
+const flag = (name: string) => {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const positional = argv.filter((a, i) => !a.startsWith("--") && !(i > 0 && argv[i - 1].startsWith("--")));
+const [cmd, ...args] = positional;
+
+function printEvents(engine: Engine) {
+  engine.on("event", (e) => {
+    const t = new Date().toTimeString().slice(0, 8);
+    if (e.type === "node:start") console.log(`${t}  > ${e.node}${e.task ? ` [${e.task}]` : ""}`);
+    else if (e.type === "log") console.log(`${t}    ${e.msg}`);
+    else if (e.type === "error") console.log(`${t}  ! ${e.node}: ${e.error}`);
+  });
+}
+
+function summary(s: RunState) {
+  console.log(`\nrun ${s.id}: ${s.status.toUpperCase()}  cost $${s.costUsd.toFixed(4)}`);
+  for (const t of s.tasks) {
+    const a = t.attempts[t.attempts.length - 1];
+    console.log(`  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} ${a ? `${a.model} #${a.n} ${a.decision ?? ""}` : ""}`);
+  }
+  if (s.waiting) {
+    console.log(`\nWAITING (${s.waiting.kind}):\n${s.waiting.question}\n`);
+    console.log(`answer: orch resume ${s.id} --choice <${s.waiting.options.join("|")}> [--note "..."]`);
+  }
+  if (s.error) console.log(`\nerror: ${s.error}`);
+  console.log(`\nvault note: ${path.join("vault", "Runs", s.id, "index.md")}`);
+}
+
+async function main() {
+  if (cmd === "server") {
+    const { SmurfServer, loadToken } = await import("./server/server.ts");
+    const dataDir = path.resolve(flag("--data") || process.env.SMURF_DATA || path.join(ROOT, "smurf-data"));
+    const port = Number(flag("--port") || process.env.SMURF_PORT || 47821);
+    const host = flag("--host") || process.env.SMURF_HOST || "127.0.0.1";
+    const server = new SmurfServer({ port, host, token: loadToken(dataDir), dataDir });
+    await server.listen();
+    console.log(`smurf-server on http://${host}:${port} (data ${dataDir})`);
+    return new Promise<void>(() => {});
+  }
+  if (cmd === "runner") {
+    const { Runner } = await import("./server/runner.ts");
+    const token = flag("--token") || process.env.SMURF_TOKEN;
+    if (!token) throw new Error("runner needs the server token: --token or SMURF_TOKEN");
+    return new Runner().connect(flag("--server") || process.env.SMURF_SERVER || "ws://127.0.0.1:47821", token);
+  }
+  const engine = new Engine();
+  switch (cmd) {
+    case "init": {
+      const repo = path.resolve(args[0] || "");
+      if (!args[0] || !git(repo, "rev-parse", "--git-dir").ok) throw new Error("usage: orch init <path to a git repo>");
+      const name = flag("--name") || path.basename(repo);
+      const base = flag("--base") || git(repo, "rev-parse", "--abbrev-ref", "HEAD").out || "main";
+      engine.vault.saveProject({
+        name,
+        repo: repo.replace(/\\/g, "/"),
+        baseBranch: base,
+        allowedCommands: (flag("--allow") || "").split(",").map((s) => s.trim()).filter(Boolean),
+        linkDirs: (flag("--link") || "").split(",").map((s) => s.trim()).filter(Boolean),
+        context: `# ${name}\n\nWrite here what the senior model should know: stack, conventions, how to test, what not to touch.`,
+      });
+      console.log(`project ${name}: ${repo} (base ${base}) -> vault/Projects/${name}.md`);
+      break;
+    }
+    case "run": {
+      const [project, ...words] = args;
+      if (!project || !words.length) throw new Error('usage: orch run <project> "<request>"');
+      printEvents(engine);
+      summary(await engine.start(project, words.join(" "), flag("--workflow") || "default"));
+      break;
+    }
+    case "resume": {
+      if (!args[0]) throw new Error("usage: orch resume <run> [--choice C] [--note ...]");
+      printEvents(engine);
+      const choice = flag("--choice");
+      summary(await engine.resume(args[0], choice ? { choice, note: flag("--note") } : undefined));
+      break;
+    }
+    case "status": {
+      if (args[0]) return summary(engine.vault.loadState(args[0]));
+      for (const s of engine.vault.runs()) {
+        const done = s.tasks.filter((t) => t.status === "accepted").length;
+        console.log(`${s.status.padEnd(8)} ${s.id.padEnd(52)} ${done}/${s.tasks.length} tasks  $${s.costUsd.toFixed(3)}${s.waiting ? `  waits: ${s.waiting.kind}` : ""}`);
+      }
+      break;
+    }
+    case "models": {
+      const reg = await engine.models.list(argv.includes("--refresh"));
+      console.log(`models (refreshed ${reg.refreshed}):`);
+      for (const m of reg.models) {
+        const cool = engine.models.coolingDown(m.key);
+        console.log(`  ${m.tier.padEnd(9)} ${engine.models.billing(m.key).padEnd(13)} ${m.key}${m.contextLength ? `  ${Math.round(m.contextLength / 1000)}k` : ""}${cool ? `  cooling (${cool.reason}) until ${cool.until.slice(11, 16)}` : ""}`);
+      }
+      if (reg.skipped.length) console.log(`skipped: ${reg.skipped.join(", ")}`);
+      break;
+    }
+    case "route": {
+      const category = args[0] as Category;
+      if (!CATEGORIES.includes(category)) throw new Error(`category must be one of ${CATEGORIES.join(", ")}`);
+      const profile = engine.agents()[category];
+      const { candidates, dropped } = await engine.router.rank({
+        category,
+        mode: (flag("--mode") as Mode) || profile?.mode || "edit",
+        risk: (flag("--risk") as Risk) || "medium",
+        minTier: (flag("--tier") as Tier) || profile?.minTier || "light",
+        exclude: [],
+        contextNeeded: 20_000,
+        budgetUsd: engine.cfg.budget.perTaskUsd,
+        escalated: argv.includes("--escalated"),
+      });
+      console.log("score   bench corr  tools ctx   lat   cost  model");
+      for (const c of candidates.slice(0, Number(flag("--top") || 10))) {
+        const p = c.parts;
+        const f = (x: number) => x.toFixed(2).padEnd(5);
+        console.log(`${c.score.toFixed(3)}   ${f(p.benchmark)} ${f(p.correctness)} ${f(p.tools)} ${f(p.context)} ${f(p.latency)} ${f(p.cost)} ${c.key}  (${c.why})`);
+      }
+      console.log(`dropped: ${Object.entries(dropped).map(([k, v]) => `${v} ${k}`).join(", ") || "none"}`);
+      break;
+    }
+    case "nodes": {
+      const list = Object.values(NODE_TYPES).map(({ run, ...rest }) => rest);
+      if (argv.includes("--json")) console.log(JSON.stringify(list, null, 2));
+      else for (const n of list) console.log(`${n.type.padEnd(20)} [${n.ports.join(", ")}]  ${n.description}`);
+      break;
+    }
+    case "workflow": {
+      const wf = engine.workflow(args[0] || "default");
+      if (argv.includes("--json")) return console.log(JSON.stringify(wf, null, 2));
+      console.log(`${wf.name}: ${wf.description ?? ""}\nvalid: ${validate(wf).length === 0}`);
+      for (const n of wf.nodes) {
+        const outs = wf.edges.filter((e) => e.from === n.id).map((e) => `${e.port ?? "out"} -> ${e.to}`);
+        console.log(`  ${n.id.padEnd(12)} ${n.type.padEnd(20)} ${outs.join(", ") || "(end)"}`);
+      }
+      break;
+    }
+    case "graph": {
+      const p = engine.vault.project(args[0]);
+      console.log(`building the code map of ${p.repo} with Graphify (AST only, no tokens) ...`);
+      const g = await buildCodeGraph(p, engine.vault.p("Code", p.name), engine.cfg.graphify.command);
+      console.log(`${g.summary}; ${g.notes} Obsidian notes in vault/Code/${p.name}/notes (commit ${g.head}). The senior reads GRAPH_REPORT.md when planning.`);
+      break;
+    }
+    case "bench": {
+      if (argv.includes("--selftest")) {
+        const r = await selftest();
+        for (const x of r) console.log(`${x.ok ? "OK  " : "FAIL"} ${x.id.padEnd(18)} ${x.note}`);
+        if (r.some((x) => !x.ok)) process.exitCode = 1;
+        break;
+      }
+      const list = (f: string) => flag(f)?.split(",").map((s) => s.trim()).filter(Boolean);
+      const rows = await runBenchmarks(
+        engine,
+        {
+          random: Number(flag("--random") || 3),
+          tasks: list("--tasks"),
+          perTask: Number(flag("--per-task") || 2),
+          models: list("--models"),
+          adapters: list("--adapters"),
+          parallel: Number(flag("--parallel") || 3),
+          seed: Number(flag("--seed") || Date.now() % 100000),
+          premium: argv.includes("--premium"),
+          timeoutMin: Number(flag("--timeout") || 12),
+        },
+        (line) => console.log(`${new Date().toTimeString().slice(0, 8)}  ${line}`),
+      );
+      console.log(`
+${rows.filter((r) => r.pass).length}/${rows.length} passed`);
+      for (const r of rows) console.log(`  ${r.pass ? "PASS" : "FAIL"} ${r.b.id.padEnd(16)} ${r.model.padEnd(55)} ${String(r.sec).padStart(4)}s  ${r.pass ? "" : r.reason}`);
+      console.log(`
+results: vault/Benchmarks/ and vault/Executions/ (source: benchmark)`);
+      break;
+    }
+    case "import-scorecard": {
+      const data = readJson<{ attempts: any[] }>(path.resolve(args[0] || ""), { attempts: [] });
+      let n = 0;
+      for (const a of data.attempts) {
+        if (/probe/.test(a.run)) continue; // test entries, not real work
+        const map: Record<string, Category> = { "ui-polish": "coding", "client-feature": "coding", "backend-fix": "debugging", "browser-test": "testing", investigate: "research" };
+        engine.vault.recordExecution({
+          run: `import-${a.run}`, task: a.task_type, attempt: a.attempt, model: `${a.tool}:${a.model}`, adapter: a.tool,
+          category: map[a.task_type] ?? "coding", risk: "medium", source: "import", success: a.score >= 90, checksPassed: a.score >= 60,
+          latencySec: 0, costUsd: 0, tokensIn: 0, tokensOut: 0, retryIndex: a.attempt - 1, reviewScore: a.score, toolFailure: "",
+          decision: a.verdict, date: a.t ? `${a.t}T00:00:00.000Z` : now(),
+        });
+        n++;
+      }
+      for (const key of new Set(data.attempts.map((a) => `${a.tool}:${a.model}`))) engine.vault.writeModelNote(key);
+      console.log(`imported ${n} execution record(s)`);
+      break;
+    }
+    default:
+      console.log(HELP);
+  }
+}
+
+main().catch((e) => {
+  console.error(`orch: ${e instanceof Error ? e.message : e}`);
+  process.exit(1);
+});
