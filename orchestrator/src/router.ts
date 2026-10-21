@@ -68,7 +68,8 @@ export class Router {
       const mine = all.filter((e) => e.model === m.key);
       // provider outages (quota, auth, model not served) say nothing about skill: only the tools signal sees them
       const judged = mine.filter((e) => !INFRA_FAILURES.includes(e.toolFailure));
-      const work = judged.filter((e) => e.source !== "benchmark");
+      // a review "succeeds" when it returns valid JSON: that says nothing about the model's skill at other work
+      const work = judged.filter((e) => e.source !== "benchmark" && (e.category !== "review" || req.category === "review"));
       const cat = (xs: Execution[]) => xs.filter((e) => e.category === req.category);
       const benchRows = judged.filter((e) => e.source === "benchmark");
       const benchAll = this.shrink(benchRows.map((e) => (e.success ? 1 : 0)), rc.prior);

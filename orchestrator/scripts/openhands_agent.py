@@ -111,6 +111,9 @@ def main():
     p.add_argument("--warmup-sec", type=float, default=0, help="send a throwaway first turn with this idle deadline")
     p.add_argument("--title", default="")  # unused; makes the process findable by the engine's kill markers
     a = p.parse_args()
+    # Windows asyncio pipes print "Exception ignored ... closed pipe" from __del__ at teardown, after the
+    # result is out; that noise filled every agent log. Real errors still go through the except below.
+    sys.unraisablehook = lambda _u: None
     try:
         text, cost, usage = run(a)
         print(json.dumps({"result": text, "is_error": not text.strip(), "total_cost_usd": cost, "usage": usage}), flush=True)
