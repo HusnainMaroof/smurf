@@ -67,30 +67,12 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center bg-surface-container-low p-1 rounded-lg border border-outline-variant/30"
           data-testid="app-mode-toggle"
         >
-          <button
-            type="button"
+          <span
             data-testid="mode-coding"
-            onClick={() => onAppModeChange('coding')}
-            className={`px-3 py-1.5 text-[11px] rounded-md transition-all cursor-pointer ${
-              appMode === 'coding'
-                ? 'bg-surface-bright text-on-surface font-bold shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface font-medium'
-            }`}
+            className="px-3 py-1.5 text-[11px] rounded-md bg-surface-bright text-on-surface font-bold shadow-sm"
           >
             {t('Coding')}
-          </button>
-          <button
-            type="button"
-            data-testid="mode-design"
-            onClick={() => onAppModeChange('design')}
-            className={`px-3 py-1.5 text-[11px] rounded-md transition-all cursor-pointer ${
-              appMode === 'design'
-                ? 'bg-surface-bright text-on-surface font-bold shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface font-medium'
-            }`}
-          >
-            {t('Design')}
-          </button>
+          </span>
         </div>
       </div>
     </header>
