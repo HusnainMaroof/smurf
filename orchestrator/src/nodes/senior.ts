@@ -4,6 +4,7 @@ import type { NodeType } from "./index.ts";
 import { confirmPrompt, planPrompt, repoSnapshot, understandPrompt } from "../prompts.ts";
 import { CATEGORIES, WAIT, type Category, type Check, type Decision, type Risk, type Task } from "../types.ts";
 import { now, slug } from "../util.ts";
+import { stillBlocked } from "./agent.ts";
 import fs from "node:fs";
 
 const RISKS: Risk[] = ["low", "medium", "high"];
@@ -106,7 +107,8 @@ export const seniorNodes: NodeType[] = [
       let reason: string;
       let critique = "";
 
-      if (a.blocked.length) {
+      if (a.blocked.length && !stillBlocked(a, profile?.mode ?? "edit")) log(`${t.id}: checks pass, so these BLOCKED lines go to follow-ups: ${a.blocked.join(" | ")}`);
+      if (stillBlocked(a, profile?.mode ?? "edit")) {
         decision = "escalate";
         reason = `agent escalated: ${a.blocked.join(" | ")}`;
       } else if (a.failure) {
@@ -126,6 +128,7 @@ export const seniorNodes: NodeType[] = [
         reason = [out.length ? `out of scope: ${out.join(", ")}` : "", failed.length ? `failed checks: ${failed.map((c) => c.name).join(", ")}` : ""].filter(Boolean).join("; ");
         critique = [
           ...out.map((f, i) => `${i + 1}. Revert your change to ${f}: it is not in the allowed files.`),
+          ...(ev.reverted?.length ? [`- The engine undid your edits to ${ev.reverted.join(", ")} (not in the allowed files). Make the task work without them; if it truly cannot, write a BLOCKED: line naming the file and why.`] : []),
           ...failed.map((c) => `- Check \`${c.cmd}\` failed${c.value !== undefined ? ` (value ${c.value}, baseline ${c.baseline})` : ""}:\n\`\`\`\n${c.tail}\n\`\`\``),
         ].join("\n");
       } else if (a.review) {

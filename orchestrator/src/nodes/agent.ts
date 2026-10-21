@@ -6,6 +6,7 @@ import type { NodeType } from "./index.ts";
 import type { NodeCtx } from "../engine.ts";
 import { reviewPrompt, workerPrompt } from "../prompts.ts";
 import type { Attempt, Evidence, Review, Task } from "../types.ts";
+import { REPORT_NAME } from "../adapters/common.ts";
 import { extractJson, now, shell, tail } from "../util.ts";
 
 function profileOf(ctx: NodeCtx, t: Task) {
@@ -34,6 +35,32 @@ function lastNumber(out: string): number | undefined {
 async function runCheck(cwd: string, cmd: string) {
   const r = await shell(cmd, { cwd, timeoutMs: 15 * 60_000 });
   return { code: r.timedOut ? null : r.code, out: r.out };
+}
+
+/**
+ * Lines where the agent says a decision stopped it ("BLOCKED: ..."). Not blockers: "BLOCKED: none"
+ * in any wording, and complaints about the report file (a read-only/plan-mode agent cannot write it;
+ * its final answer is used as the report instead).
+ */
+export function blockedLines(text: string): string[] {
+  return text
+    .split("\n")
+    .filter((l) => /^\s*(?:[-*]\s*)?(?:\*\*)?BLOCKED:/i.test(l))
+    .filter((l) => !/BLOCKED:(?:\*\*)?\W*(?:(?:none|n\/?a|nothing)\b|no\W*$)/i.test(l))
+    .filter((l) => !(l.includes(REPORT_NAME) || /\breport\b.*\b(file|write|writ|creat)|\b(write|writ|creat)\w*\b.*\breport\b/i.test(l)))
+    .map((l) => l.trim());
+}
+
+/**
+ * A BLOCKED line stops the task only when the task is not provably done. Agents also write BLOCKED for
+ * work they rightly left alone (another task's file); when the acceptance checks exist and pass, the scope
+ * is clean and an edit agent changed something, those lines become follow-ups for the owner instead.
+ */
+export function stillBlocked(a: Attempt, mode: string): boolean {
+  if (!a.blocked.length) return false;
+  const ev = a.evidence;
+  const done = !!ev && ev.checks.length > 0 && ev.checksOk && ev.scopeOk && (mode !== "edit" || ev.diffLines > 0);
+  return !done;
 }
 
 export const agentNodes: NodeType[] = [
@@ -126,7 +153,7 @@ export const agentNodes: NodeType[] = [
         t.approvalReason = `run budget $${engine.cfg.budget.perRunUsd} used up`;
         return "none";
       }
-      if (last && last.model !== key) engine.ws.reset(t);
+      if (last && last.model !== key) engine.ws.reset(t, s.project);
       const adapter = engine.models.adapter(key);
       const depReports = t.deps
         .map((d) => s.tasks.find((x) => x.id === d))
@@ -153,8 +180,7 @@ export const agentNodes: NodeType[] = [
         tokensIn: res.tokensIn,
         tokensOut: res.tokensOut,
         reportFile,
-        // "BLOCKED: none" / "n/a" means the agent was NOT blocked
-        blocked: res.text.split("\n").filter((l) => /^\s*(?:[-*]\s*)?BLOCKED:/i.test(l) && !/BLOCKED:\W*(?:none|no|n\/?a|nothing)?\W*$/i.test(l)).map((l) => l.trim()),
+        blocked: blockedLines(res.text),
       };
       t.attempts.push(attempt);
       log(`${t.id} #${n} finished in ${Math.round(res.latencyMs / 1000)}s${res.failure ? `, failure ${res.failure}` : ""}`);
@@ -175,7 +201,17 @@ export const agentNodes: NodeType[] = [
       if (a.failure) return "out";
       const p = profileOf(ctx, t);
       const diffFile = path.join(engine.vault.runDir(s.id), `${t.id}-a${a.n}.diff`);
-      const { changed, diffLines } = engine.ws.changes(s, t, diffFile);
+      let { changed, diffLines } = engine.ws.changes(s, t, diffFile);
+      // scope repair: an edit agent that also touched files outside its list keeps its in-scope work;
+      // the stray edits are undone and the checks decide whether the rest stands on its own
+      let reverted: string[] | undefined;
+      const stray = p.mode === "edit" ? changed.filter((c) => !c.inScope) : [];
+      if (stray.length && stray.length < changed.length) {
+        engine.ws.revert(t, stray);
+        reverted = stray.map((c) => c.file);
+        ({ changed, diffLines } = engine.ws.changes(s, t, diffFile));
+        log(`${t.id} #${a.n}: reverted out-of-scope edits to ${reverted.join(", ")}`);
+      }
       // read-only agents must not change anything at all
       const marked = p.mode === "readonly" ? changed.map((c) => ({ ...c, inScope: false })) : changed;
       const checks: Evidence["checks"] = [];
@@ -190,7 +226,7 @@ export const agentNodes: NodeType[] = [
         if (ok && c.measure && value === undefined) ok = false;
         checks.push({ name: c.name, cmd: c.cmd, ok, exitCode: r.code, value, baseline, tail: tail(r.out, 20) });
       }
-      a.evidence = { changed: marked, scopeOk: marked.every((c) => c.inScope), checks, checksOk: checks.every((c) => c.ok), diffLines, diffFile };
+      a.evidence = { changed: marked, scopeOk: marked.every((c) => c.inScope), checks, checksOk: checks.every((c) => c.ok), diffLines, diffFile, ...(reverted ? { reverted } : {}) };
       log(`evidence ${t.id} #${a.n}: ${marked.length} file(s), scope ${a.evidence.scopeOk ? "ok" : "VIOLATED"}, checks ${checks.filter((c) => c.ok).length}/${checks.length}`);
       return "out";
     },
@@ -208,7 +244,7 @@ export const agentNodes: NodeType[] = [
       const a = t.attempts[t.attempts.length - 1];
       const ev = a.evidence;
       const p = profileOf(ctx, t);
-      if (a.failure || !ev || !ev.scopeOk || !ev.checksOk || a.blocked.length || ev.diffLines === 0) return "out";
+      if (a.failure || !ev || !ev.scopeOk || !ev.checksOk || stillBlocked(a, p.mode) || ev.diffLines === 0) return "out";
       const needed = p.review === "always" || (p.review === "risky" && (t.risk !== "low" || ev.diffLines >= Number(params.minDiffLines)));
       if (!needed) return "out";
       const reviewer = engine.agents().review;
@@ -257,7 +293,7 @@ export const agentNodes: NodeType[] = [
       const t = task();
       t.status = "accepted";
       if (profileOf(ctx, t).mode === "readonly") {
-        engine.ws.reset(t);
+        engine.ws.reset(t, s.project);
         engine.ws.removeTask(s, t);
         return "out";
       }

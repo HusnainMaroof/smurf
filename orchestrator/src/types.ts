@@ -71,6 +71,8 @@ export interface Evidence {
   checksOk: boolean;
   diffLines: number;
   diffFile: string;
+  /** Out-of-scope edits the engine undid before running the checks (the in-scope work was kept). */
+  reverted?: string[];
 }
 
 export interface Review {

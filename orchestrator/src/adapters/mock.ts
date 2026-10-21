@@ -1,7 +1,8 @@
-// Deterministic fake provider for tests and for building the desktop UI without
+// Deterministic fake provider for tests, without
 // spending tokens. Behaviour comes from a script file (ORCH_MOCK_SCRIPT):
 //   { models: [{model, tier}], understand: {...}, plan: {tasks: [...]},
-//     edits: { "<model>": [{file, find, replace}] }, review: {score, verdict, findings} }
+//     edits: { "<model>": [{file, find, replace}] }, review: {score, verdict, findings},
+//     stray?: { "<model>": [{file, content}] } (written outside the allowed files), say?: { "<model>": "extra report text" } }
 import fs from "node:fs";
 import path from "node:path";
 import type { Adapter, ModelInfo, Mode, RunRequest, RunResult } from "../types.ts";
@@ -13,6 +14,8 @@ interface Script {
   edits: Record<string, { file: string; find: string; replace: string }[]>;
   review: unknown;
   confirm?: unknown;
+  stray?: Record<string, { file: string; content: string }[]>;
+  say?: Record<string, string>;
 }
 
 export class MockAdapter implements Adapter {
@@ -53,7 +56,8 @@ export class MockAdapter implements Adapter {
           changed.push(e.file);
         }
       }
-      text = `## Assumptions\n- mock run\n\n## Changes\n${changed.map((c) => `- ${c}`).join("\n") || "- nothing changed"}\n`;
+      for (const x of s.stray?.[req.model] || []) fs.writeFileSync(path.join(req.cwd, x.file), x.content);
+      text = `## Assumptions\n- mock run\n\n## Changes\n${changed.map((c) => `- ${c}`).join("\n") || "- nothing changed"}\n${s.say?.[req.model] ?? ""}`;
     }
     fs.writeFileSync(req.logFile, `mock ${req.model} ${kind}\n${text}\n`);
     return { ok: true, text, exitCode: 0, latencyMs: 5, tokensIn: req.prompt.length / 4, tokensOut: text.length / 4, costUsd: 0 };

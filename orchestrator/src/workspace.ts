@@ -67,17 +67,19 @@ export class Workspace {
   }
 
   /** Throws away the agent's uncommitted work (new model starts clean). */
-  reset(t: Task) {
+  /** Back to the task's start point. git clean drops linked folders the project does not ignore, so they are linked again. */
+  reset(t: Task, p?: Project) {
     if (!t.worktree) return;
     git(t.worktree, "reset", "--hard", "-q");
     git(t.worktree, "clean", "-fdq", "-e", REPORT_NAME);
+    if (p) this.link(p, t.worktree);
   }
 
   /** Changed files vs the task's start point, with scope, plus the full diff written to diffFile. */
   changes(s: RunState, t: Task, diffFile: string) {
     const wt = t.worktree!;
     git(wt, "add", "-A", "--", ".", ...s.project.linkDirs.map((d) => `:!${d}`));
-    const names = git(wt, "diff", "--cached", "--name-status", "HEAD").out.split("\n").filter(Boolean);
+    const names = git(wt, "diff", "--cached", "--name-status", "--no-renames", "HEAD").out.split("\n").filter(Boolean);
     const changed = names.map((l) => {
       const [status, ...rest] = l.split("\t");
       const file = posix(rest[rest.length - 1]);
@@ -88,6 +90,14 @@ export class Workspace {
     const diffLines = diff.split("\n").filter((l) => /^[+-][^+-]/.test(l)).length;
     git(wt, "reset", "-q");
     return { changed, diff, diffLines };
+  }
+
+  /** Undoes the agent's changes to these files only: added files go, changed or deleted ones come back from the start point. */
+  revert(t: Task, files: { file: string; status: string }[]) {
+    const wt = t.worktree!;
+    const restore = files.filter((f) => !f.status.startsWith("A")).map((f) => f.file);
+    if (restore.length) git(wt, "checkout", "HEAD", "--", ...restore);
+    for (const f of files.filter((x) => x.status.startsWith("A"))) fs.rmSync(path.join(wt, f.file), { force: true });
   }
 
   /** Commits the task branch and merges it into the integration branch. */

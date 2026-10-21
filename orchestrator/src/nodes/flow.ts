@@ -90,6 +90,8 @@ export const flowNodes: NodeType[] = [
         const ok = s.input.choice === "approve";
         s.waiting = undefined;
         s.input = undefined;
+        // approved: these reasons are answered; left set they would be reported as the reason of a later escalation
+        if (ok) for (const t of s.tasks) t.approvalReason = undefined;
         return ok ? "approved" : "rejected";
       }
       const risky = s.tasks.filter((t) => t.approvalReason);
@@ -187,7 +189,9 @@ export const flowNodes: NodeType[] = [
         const report = a.reportFile && fs.existsSync(a.reportFile) ? fs.readFileSync(a.reportFile, "utf8") : "";
         const notes = followUps(report).map((n) => `- **${t.id}** (agent): ${n}`);
         const findings = (a.review?.findings ?? []).map((f) => `- **${t.id}** (review, ${f.severity}): ${f.file ? `\`${f.file}\` ` : ""}${f.issue}`);
-        return [...notes, ...findings];
+        const reverted = a.evidence?.reverted?.length ? [`- **${t.id}** (engine): undid out-of-scope edits to ${a.evidence.reverted.map((f) => `\`${f}\``).join(", ")}; check whether they were needed`] : [];
+        const left = t.status === "accepted" ? a.blocked.map((b) => `- **${t.id}** (agent, left undone): ${b.replace(/^[-*\s]*(\*\*)?BLOCKED:(\*\*)?\s*/i, "")}`) : [];
+        return [...notes, ...left, ...reverted, ...findings];
       });
       const body = [
         `# Report: ${s.request.split("\n")[0].slice(0, 100)}`,

@@ -56,7 +56,7 @@ export const benchNodes: NodeType[] = [
         date: now(),
       });
       engine.vault.writeModelNote(a.model);
-      engine.ws.reset(t);
+      engine.ws.reset(t, s.project);
       engine.ws.removeTask(s, t);
       log(`${t.id} on ${a.model}: ${a.reason}`);
       return "out";

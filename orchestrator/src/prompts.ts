@@ -107,13 +107,15 @@ export function workerPrompt(o: {
     `TASK ${t.id}: ${t.title}\n\n${t.brief}`,
     `ALLOWED FILES:\n${t.files.map((f) => `- ${f}`).join("\n") || "- none (read-only task: change nothing)"}`,
     t.checks.length ? `ACCEPTANCE CHECKS (the engine runs these after you finish; run them yourself first if you can):\n${t.checks.map((c) => `- ${c.cmd}`).join("\n")}` : "",
-    s.understanding ? `OVERALL GOAL: ${s.understanding.goal}` : "",
+    s.understanding ? `OVERALL GOAL (context only: other tasks cover the other parts; do only YOUR task, and do not report the other parts as BLOCKED): ${s.understanding.goal}` : "",
     o.depReports.length ? `CONTEXT FROM EARLIER TASKS:\n${o.depReports.join("\n\n")}` : "",
     t.critique && last ? `CORRECTION (attempt ${t.attempts.length + 1}). Your previous attempt was rejected. Fix exactly these points, keep what was right:\n${t.critique}` : "",
     o.apiEdit ? `${FILE_PROTOCOL}\n\n${fileBodies}` : "",
     o.apiEdit
       ? "REPORT: after the file blocks write: ## Assumptions, ## Changes (file: what and why), one line starting with BLOCKED: only for a decision that stopped you from finishing, and ## Follow-ups for anything else worth doing later."
-      : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), one line starting with BLOCKED: only per decision that stopped you from finishing part of the task (never "BLOCKED: none"), and ## Follow-ups for suggestions or cleanups you did not need.`,
+      : profile.mode === "readonly"
+        ? `REPORT: give your report as your final answer (read-only: do not create any file, not even a report file). Sections: ## Findings (one line each: file:line, severity, what), ## Details, ## Recommendation, one line starting with BLOCKED: only for a question that stopped you (never "BLOCKED: none"), and ## Follow-ups.`
+        : `REPORT: when done, write your report to the file ${REPORT_NAME} in the workspace root (or, if you cannot write files, give it as your final answer). Sections: ## Assumptions, ## Changes (file: before -> after), ## Self-check (commands + output), one line starting with BLOCKED: only per decision that stopped you from finishing part of the task (never "BLOCKED: none"), and ## Follow-ups for suggestions or cleanups you did not need.`,
   ].filter(Boolean).join("\n\n");
 }
 
@@ -126,7 +128,7 @@ export function reviewPrompt(o: { s: RunState; t: Task; ev: Evidence; diff: stri
     terseRule(o.terse),
     `TASK ${t.id} (${t.category}, risk ${t.risk}): ${t.title}\n${t.brief}`,
     `ALLOWED FILES: ${t.files.join(", ") || "(none)"}`,
-    `ENGINE EVIDENCE:\n- scope: ${ev.scopeOk ? "all changed files allowed" : "FILES OUTSIDE SCOPE: " + ev.changed.filter((c) => !c.inScope).map((c) => c.file).join(", ")}\n${ev.checks.map((c) => `- ${c.ok ? "PASS" : "FAIL"} ${c.cmd}${c.value !== undefined ? ` value=${c.value} baseline=${c.baseline ?? "-"}` : ""}`).join("\n")}`,
+    `ENGINE EVIDENCE:\n- scope: ${ev.scopeOk ? "all changed files allowed" : "FILES OUTSIDE SCOPE: " + ev.changed.filter((c) => !c.inScope).map((c) => c.file).join(", ")}\n${ev.reverted?.length ? `- the engine undid out-of-scope edits to ${ev.reverted.join(", ")} (not in the diff); judge whether the change is complete without them\n` : ""}${ev.checks.map((c) => `- ${c.ok ? "PASS" : "FAIL"} ${c.cmd}${c.value !== undefined ? ` value=${c.value} baseline=${c.baseline ?? "-"}` : ""}`).join("\n")}`,
     `AGENT REPORT (claims, unverified):\n${o.report.slice(0, 4000)}`,
     `DIFF:\n${o.diff.slice(0, 60_000)}`,
     "Score 0-100: goal met (25), correctness incl. edge cases, regressions, security and data isolation (25), surgical: only what the task needs (25), simple: no needless code (25). Severity: critical | high | medium | low. Any critical or high finding means the change must not be accepted as is.",
