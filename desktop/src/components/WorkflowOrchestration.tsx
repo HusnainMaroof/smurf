@@ -955,7 +955,13 @@ const edgeColors: Record<string, string> = {
                 </div>
               ) : compilerWorkflow ? (
                 <div className="flex-1 min-h-0 overflow-auto p-4 bg-neutral-50/20">
-                  <SmurfGraphView workflow={compilerWorkflow} />
+                  <SmurfGraphView
+                    workflow={compilerWorkflow}
+                    onSave={async (w) => {
+                      await saveUserWorkflow(w);
+                      await refreshList();
+                    }}
+                  />
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center text-neutral-400 text-xs">
