@@ -1,0 +1,32 @@
+[
+  {
+    "id": "tokens-bench-senior",
+    "title": "Bench and senior record tokensCached; bench never counts skipped checks as passed",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 25,
+    "files": ["src/nodes/bench.ts", "src/nodes/senior.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "wired", "cmd": "grep -q 'tokensCached' src/nodes/bench.ts && grep -q 'tokensCached' src/nodes/senior.ts && grep -q 'checksSkipped' src/nodes/bench.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Attempt and Execution (src/types.ts, src/vault.ts) have an optional `tokensCached?: number`; src/nodes/agent.ts already records it as `tokensCached: res.tokensCached === undefined ? undefined : Math.round(res.tokensCached)`. Evidence has `checksSkipped?: string` (set when the checks were not run: no changes, or only out-of-scope changes; then evidence.checks is [] and checksOk is vacuously true).\n1. src/nodes/bench.ts: in the recordExecution call add `tokensCached` the same way from the attempt `a` (a.tokensCached, rounded when defined); and make `checksPassed: !!ev && ev.scopeOk && ev.checksOk && !ev.checksSkipped`. If bench computes its own pass/fail `ok` from the evidence, apply the same `!ev.checksSkipped` condition there.\n2. src/nodes/senior.ts: in the senior.decide node's recordExecution call add `tokensCached` from `a` the same way.\nChange nothing else."
+  },
+  {
+    "id": "commandcode-parse",
+    "title": "Parse mode for Command Code's NDJSON output",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/adapters/cli.ts", "src/config.ts", "config/orchestrator.json", "test/adapters.ts", "package.json"],
+    "deps": ["tokens-bench-senior"],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "adapters", "cmd": "node test/adapters.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts, no packages). Read CliAdapter.run in src/adapters/cli.ts (parse modes \"claude-json\", \"out-file\", text; then `classify(r.out, isError ? 1 : r.code, ...)`), `parse?:` in src/config.ts, and the disabled \"commandcode\" provider in config/orchestrator.json.\n`commandcode -p --output-format json` prints NDJSON (one JSON object per line) and exits 0 even on errors. The last line is the result, e.g. success: {\"type\":\"result\",\"subtype\":\"success\",\"finalText\":\"...\",\"usage\":{\"inputTokens\":10,\"outputTokens\":5,\"cacheReadTokens\":3,\"cacheWriteTokens\":0}}; real error: {\"type\":\"result\",\"subtype\":\"error\",\"usage\":{\"inputTokens\":0,\"outputTokens\":0,\"cacheReadTokens\":0,\"cacheWriteTokens\":0},\"finalText\":\"\",\"error\":\"Error: Insufficient credits for Command Code.\"}.\n1. cli.ts: export `parseCommandCode(out: string): { text: string; isError: boolean; error: string; tokensIn: number; tokensCached: number; tokensOut: number } | null` that finds the LAST line parsing to an object with type \"result\" (skip lines that are not JSON); isError = subtype !== \"success\"; tokensIn = inputTokens + cacheWriteTokens; tokensCached = cacheReadTokens. Returns null when there is no result line.\n2. Add parse mode \"commandcode-json\" (also to the union in src/config.ts) that uses it: text = finalText, isError, tokens; when isError, append the error text to what classify sees, e.g. classify(r.out + \"\\n\" + error, 1, ...), so \"Insufficient credits\" becomes rate_limit.\n3. config/orchestrator.json commandcode provider: \"parse\": \"commandcode-json\" and add ` --output-format json` to both run commands (keep \"enabled\": false; update its _note: the parse mode exists now, only credits are missing).\n4. Create test/adapters.ts (node:assert/strict, prints `adapters PASS`): parseCommandCode on the success line gives the text and tokens 10/3/5; on the error line (with an event line before it) gives isError true and the error text; on \"not json\" gives null. package.json: append ` && node test/adapters.ts` to the test script.\nChange nothing else."
+  }
+]
