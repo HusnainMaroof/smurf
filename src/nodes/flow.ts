@@ -23,7 +23,7 @@ export function followUps(report: string): string[] {
   return items.filter((l) => !/^(none|n\/a|nothing)(\s*[.!:;,—–-]|$)/i.test(l));
 }
 
-/** Drop follow-up items that mention another task's id as a whole word (backticks don't make it a word). */
+/** Drop follow-up items that mention another task's id as a whole word (also inside backticks): that work is the other task's. */
 export function ownFollowUps(items: string[], otherIds: string[]): string[] {
   if (!otherIds.length) return items.slice();
   const escaped = otherIds.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
