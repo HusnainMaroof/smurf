@@ -41,6 +41,7 @@ export interface RunResult {
   exitCode: number | null;
   latencyMs: number;
   tokensIn: number;
+  tokensCached?: number;
   tokensOut: number;
   costUsd: number;
   failure?: Failure;
@@ -69,6 +70,8 @@ export interface Evidence {
   scopeOk: boolean;
   checks: { name: string; cmd: string; ok: boolean; exitCode: number | null; value?: number; baseline?: number; tail: string }[];
   checksOk: boolean;
+  /** Why the checks were not run (no changes, or only out-of-scope changes). */
+  checksSkipped?: string;
   diffLines: number;
   diffFile: string;
   /** Out-of-scope edits the engine undid before running the checks (the in-scope work was kept). */
@@ -93,6 +96,7 @@ export interface Attempt {
   failure?: Failure;
   costUsd: number;
   tokensIn: number;
+  tokensCached?: number;
   tokensOut: number;
   reportFile: string;
   blocked: string[];

@@ -15,10 +15,28 @@ export function runSummary(engine: Engine, s: RunState): string {
   for (const t of s.tasks) {
     const a = t.attempts.find((x) => x.decision === "accept") ?? t.attempts[t.attempts.length - 1];
     const ev = a?.evidence;
-    const checks = ev?.checks.map((c) => `${c.ok ? "PASS" : "FAIL"} ${c.name}`).join(", ") || "no checks";
-    out.push(
-      `  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} ${a ? `${a.model} (${t.attempts.length} attempt${t.attempts.length > 1 ? "s" : ""}) ${a.decision ?? "-"}` : "not started"}`,
-    );
+    let checks: string;
+    if (ev?.checksSkipped) {
+      checks = `checks not run (${ev.checksSkipped})`;
+    } else {
+      checks = ev?.checks.map((c) => `${c.ok ? "PASS" : "FAIL"} ${c.name}`).join(", ") || "no checks";
+    }
+    let statusLine: string;
+    if (t.status === "running") {
+      if (t.attempts.length === 0) {
+        statusLine = `  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} working (attempt 1)`;
+      } else {
+        const lastAttempt = t.attempts[t.attempts.length - 1];
+        if (!lastAttempt.decision) {
+          statusLine = `  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} ${lastAttempt.model} working (attempt ${t.attempts.length})`;
+        } else {
+          statusLine = `  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} ${a ? `${a.model} (${t.attempts.length} attempt${t.attempts.length > 1 ? "s" : ""}) ${a.decision ?? "-"}` : "not started"}`;
+        }
+      }
+    } else {
+      statusLine = `  ${t.status.padEnd(9)} ${t.id.padEnd(14)} ${t.category.padEnd(12)} ${t.risk.padEnd(6)} ${a ? `${a.model} (${t.attempts.length} attempt${t.attempts.length > 1 ? "s" : ""}) ${a.decision ?? "-"}` : "not started"}`;
+    }
+    out.push(statusLine);
     if (a) out.push(`      ${checks}${a.review ? `; review ${a.review.score}` : ""}${ev ? `; ${ev.changed.length} file(s)` : ""}${ev?.reverted?.length ? `; undid ${ev.reverted.join(", ")}` : ""}`);
   }
   if (s.waiting) out.push("", `WAITING (${s.waiting.kind}): ${s.waiting.question}`, `answer: orch resume ${s.id} --choice <${s.waiting.options.join("|")}> [--note "..."]`);
