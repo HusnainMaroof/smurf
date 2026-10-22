@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { classify } from "../engine/src/adapters/common.ts";
+import { countDiffLines } from "../engine/src/workspace.ts";
 import { pickReady, ownFollowUps } from "../engine/src/nodes/flow.ts";
 import type { RunState, Task } from "../engine/src/types.ts";
 import { git, shell, watchWindow, type WatchInfo } from "../engine/src/util.ts";
@@ -78,5 +79,18 @@ assert.ok(quiet.r.stalled && /no progress/.test(quiet.r.out), quiet.r.out.slice(
 const busy = await watched("for i in 1 2 3; do echo \"reading file number $i of the project\"; sleep 0.1; done");
 assert.equal(busy.r.stalled, false);
 assert.equal(busy.r.code, 0);
+
+// changed lines: a real added list item ("+- [x]") and a removed "-- comment" count, file headers do not
+const listDiff = [
+  "diff --git a/examples/README.md b/examples/README.md",
+  "--- a/examples/README.md",
+  "+++ b/examples/README.md",
+  "@@ -16,6 +16,7 @@",
+  " - [params](./params) - Working with route parameters",
+  "+- [problem-json](./problem-json) - Responding with RFC 9457 problem details",
+  "--- old SQL comment",
+  "--- /dev/null",
+].join("\n");
+assert.equal(countDiffLines(listDiff), 2);
 
 console.log("pick PASS");

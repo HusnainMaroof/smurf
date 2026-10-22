@@ -7,6 +7,16 @@ import type { Project, RunState, Task } from "./types.ts";
 import { git, inScope, posix } from "./util.ts";
 import { REPORT_NAME } from "./adapters/common.ts";
 
+/**
+ * Added and removed lines in a unified diff. Only the "+++ " / "--- " file headers are skipped: the old
+ * rule (second character not + or -) dropped a real added Markdown list item ("+- [x](./x)"), so a
+ * correct one-line edit looked like no change and was retried four times (Express run 2026-10-22).
+ */
+export function countDiffLines(diff: string): number {
+  // headers name the file ("--- a/x", "+++ b/x", "/dev/null"); a removed "-- comment" line is content
+  return diff.split("\n").filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---) (a\/|b\/|\/dev\/null)/.test(l)).length;
+}
+
 const ID = ["-c", "user.name=orchestrator", "-c", "user.email=orchestrator@local"];
 
 export class Workspace {
@@ -87,7 +97,7 @@ export class Workspace {
     });
     const diff = git(wt, "diff", "--cached", "HEAD").out;
     fs.writeFileSync(diffFile, diff + "\n");
-    const diffLines = diff.split("\n").filter((l) => /^[+-][^+-]/.test(l)).length;
+    const diffLines = countDiffLines(diff);
     git(wt, "reset", "-q");
     return { changed, diff, diffLines };
   }
