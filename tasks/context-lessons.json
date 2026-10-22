@@ -1,0 +1,47 @@
+[
+  {
+    "id": "lessons-module",
+    "title": "pastLessons(): what went wrong in a project's recent runs",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/lessons.ts", "test/lessons.ts", "package.json"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "lessons", "cmd": "node test/lessons.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts, erasable syntax only, no packages). Read src/types.ts (RunState: id, project.name, request, status, createdAt, tasks; Task: id, title, status 'pending'|'running'|'accepted'|'failed'|'skipped', attempts: Attempt[], critique?) and test/pick.ts (test style; builds partial RunState with `as unknown as RunState`).\n1. Create src/lessons.ts with `export function pastLessons(runs: { s: RunState; report: string }[], project: string, currentId: string, maxRuns = 5, max = 15): string[]`. Keep runs whose s.project.name === project and s.id !== currentId, newest first by createdAt, take maxRuns. Per run, emit lines prefixed with `<run id>: `:\n - each task with status failed or skipped: `task <id> (<title>) <status> after <attempts.length> attempt(s)` plus `: <first line of critique, max 200 chars>` when critique is set;\n - each accepted task with attempts.length > 1: `task <id> (<title>) needed <n> attempts` plus the critique part the same way;\n - the lines under a `## Follow-ups` heading in report (until the next `## ` heading), each starting with `- `, without the `- `, max 200 chars each.\n Return at most max lines in that order.\n2. Create test/lessons.ts covering: other project and current run ignored; newest run first; failed, retried-then-accepted and follow-up lines; max cap. Print `lessons PASS`.\n3. package.json: append ` && node test/lessons.ts` to the \"test\" script.\nChange nothing else."
+  },
+  {
+    "id": "lessons-in-plan",
+    "title": "Senior plans with lessons from the project's recent runs",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/prompts.ts", "src/nodes/senior.ts"],
+    "deps": ["lessons-module"],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "wired", "cmd": "grep -q 'pastLessons' src/nodes/senior.ts && grep -q 'LESSONS FROM RECENT RUNS' src/prompts.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts). src/lessons.ts exports `pastLessons(runs: { s: RunState; report: string }[], project: string, currentId: string): string[]`. Read planPrompt in src/prompts.ts (signature `planPrompt(s, snapshot, agents, terse)`, `snapshot,` sits in its returned array) and the senior.plan node in src/nodes/senior.ts.\n1. src/prompts.ts: add a fifth parameter `lessons: string[] = []` to planPrompt and, right after `snapshot,` in planPrompt's array (not the one in understandPrompt), add: `lessons.length ? `LESSONS FROM RECENT RUNS OF THIS PROJECT (failures, retries, open follow-ups; plan around them, and turn a follow-up into a task only if the request needs it):\n${lessons.map((l) => `- ${l}`).join(\"\n\")}` : \"\"`.\n2. src/nodes/senior.ts senior.plan node: build `const runs = engine.vault.runs().map((r) => { const f = path.join(engine.vault.runDir(r.id), \"report.md\"); return { s: r, report: fs.existsSync(f) ? fs.readFileSync(f, \"utf8\") : \"\" }; });` and pass `pastLessons(runs, s.project.name, s.id)` as planPrompt's fifth argument. Import pastLessons from \"../lessons.ts\" and fs/path from node: if missing.\nChange nothing else."
+  },
+  {
+    "id": "git-env-clean",
+    "title": "Engine git calls ignore a leaked GIT_DIR / GIT_WORK_TREE",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["src/util.ts", "test/pick.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "leak", "cmd": "GIT_DIR=/nonexistent GIT_WORK_TREE=/nonexistent node test/pick.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Found in three real runs: agent shells with isolateGit export GIT_DIR/GIT_WORK_TREE, and when they leak into the engine's environment every engine git step and npm test break. Read `git` in src/util.ts (spawnSync(\"git\", args, { cwd, encoding, maxBuffer })).\n1. In src/util.ts `git()`: pass `env` = a copy of process.env without GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE, so the engine's git always works on `cwd`. Add a one-line comment saying why. Do not change shell().\n2. At the end of test/pick.ts (before `pick PASS`): create a temp dir, run `git(tmp, \"init\", \"-q\")`, set process.env.GIT_DIR = \"/nonexistent\", assert `git(tmp, \"rev-parse\", \"--git-dir\").ok` is true, then delete process.env.GIT_DIR. Import git from ../src/util.ts and fs/os/path as needed.\nChange nothing else."
+  }
+]
