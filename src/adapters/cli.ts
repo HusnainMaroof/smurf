@@ -23,6 +23,36 @@ function prestart(cmd: string) {
   return prestarted.get(cmd);
 }
 
+/**
+ * Command Code with --output-format json prints NDJSON (one object per line) and exits 0 even on
+ * errors; the result object is the last one. Its real error text is in there, not on stderr.
+ */
+export function parseCommandCode(
+  out: string,
+): { text: string; isError: boolean; error: string; tokensIn: number; tokensCached: number; tokensOut: number } | null {
+  const lines = stripAnsi(out).split("\n");
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i].trim().startsWith("{")) continue;
+    let o: any;
+    try {
+      o = JSON.parse(lines[i]);
+    } catch {
+      continue;
+    }
+    if (!o || typeof o !== "object" || o.type !== "result") continue;
+    const u = o.usage || {};
+    return {
+      text: String(o.finalText ?? ""),
+      isError: o.subtype !== "success",
+      error: String(o.error ?? ""),
+      tokensIn: Number(u.inputTokens || 0) + Number(u.cacheWriteTokens || 0),
+      tokensCached: Number(u.cacheReadTokens || 0),
+      tokensOut: Number(u.outputTokens || 0),
+    };
+  }
+  return null;
+}
+
 export class CliAdapter implements Adapter {
   kind = "cli" as const;
   modes: Mode[];
@@ -115,6 +145,17 @@ export class CliAdapter implements Adapter {
         } catch {
           /* fall through to report file */
         }
+      }
+    } else if (this.pc.parse === "commandcode-json") {
+      const cc = parseCommandCode(r.out);
+      if (cc) {
+        text = cc.text;
+        isError = cc.isError;
+        tokensIn = cc.tokensIn;
+        tokensCached = cc.tokensCached;
+        tokensOut = cc.tokensOut;
+        // classify reads the output tail, so the real error has to be in there
+        if (cc.isError) r.out += "\n" + cc.error;
       }
     } else if (this.pc.parse === "out-file") {
       text = fs.existsSync(outFile) ? fs.readFileSync(outFile, "utf8") : "";
