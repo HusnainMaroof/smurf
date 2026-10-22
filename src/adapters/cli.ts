@@ -120,6 +120,8 @@ export class CliAdapter implements Adapter {
       cwd: req.cwd,
       timeoutMs: req.timeoutMs,
       idleMs: req.idleMs,
+      watchMs: req.watchMs,
+      onWatch: req.onWatch,
       killMarkers: req.killMarkers,
       logFile: req.logFile,
       env: this.pc.isolateGit ? { GIT_DIR: FAKE_GIT, GIT_WORK_TREE: FAKE_GIT } : {},

@@ -56,6 +56,8 @@ function printEvents(engine: Engine) {
     if (e.type === "node:start") console.log(`${t}  > ${e.node}${e.task ? ` [${e.task}]` : ""}`);
     else if (e.type === "log") console.log(`${t}    ${e.msg}`);
     else if (e.type === "error") console.log(`${t}  ! ${e.node}: ${e.error}`);
+    else if (e.type === "watch")
+      console.log(`${t}    check-in ${e.agent} (${e.model}): ${e.minutes} min, ${e.newLines} new lines, ${e.repeated} repeated -> ${e.verdict}`);
   });
 }
 

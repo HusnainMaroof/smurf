@@ -19,7 +19,8 @@
     "maxSameModel": 2,
     "reassignsBeforeTierUp": 1,
     "maxNodeVisits": 60,
-    "idleMin": 8
+    "idleMin": 8,
+    "watchMin": 10
   },
   "router": {
     "weights": {

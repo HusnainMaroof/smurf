@@ -39,14 +39,50 @@ export interface ShellResult {
   code: number | null;
   out: string;
   timedOut: boolean;
-  stalled: boolean; // killed after idleMs without any output
+  stalled: boolean; // killed after idleMs without any output, or by the watch (looping, no progress)
   ms: number;
+}
+
+/** What the watch saw in one window of an agent's output. */
+export interface WatchInfo {
+  minutes: number;
+  newLines: number; // meaningful lines printed in this window
+  repeated: number; // of those, lines already printed earlier
+  verdict: "ok" | "looping" | "no progress";
+}
+
+/**
+ * One watch window: an agent that keeps printing but only repeats itself (a model restating the same
+ * question for minutes, found in a real Freebuff run) or prints nothing but heartbeats is not working.
+ * Numbers are masked so "12 s" and "40 s" compare equal; "[heartbeat]" lines never count as progress.
+ */
+export function watchWindow(chunk: string, seen: Set<string>): Omit<WatchInfo, "minutes"> {
+  const lines = chunk
+    .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\d+/g, "#").replace(/\s+/g, " ").trim())
+    .filter((l) => l.length >= 8 && !l.startsWith("[heartbeat]"));
+  const repeated = lines.filter((l) => seen.has(l)).length;
+  for (const l of lines) seen.add(l);
+  const verdict = lines.length === 0 ? "no progress" : lines.length >= 10 && repeated / lines.length >= 0.85 ? "looping" : "ok";
+  return { newLines: lines.length, repeated, verdict };
 }
 
 /** Runs a bash script, streams output to logFile, kills the whole tree on timeout. */
 export function shell(
   script: string,
-  opts: { cwd: string; timeoutMs: number; idleMs?: number; logFile?: string; env?: NodeJS.ProcessEnv; input?: string; killMarkers?: string[] },
+  opts: {
+    cwd: string;
+    timeoutMs: number;
+    idleMs?: number;
+    logFile?: string;
+    env?: NodeJS.ProcessEnv;
+    input?: string;
+    killMarkers?: string[];
+    /** check the output every watchMs; stop the agent when it loops or makes no progress */
+    watchMs?: number;
+    onWatch?: (w: WatchInfo) => void;
+  },
 ): Promise<ShellResult> {
   return new Promise((resolve) => {
     const started = Date.now();
@@ -58,12 +94,14 @@ export function shell(
     const child = spawn(BASH, ["-c", script], { cwd: opts.cwd, env, stdio: ["pipe", "pipe", "pipe"] });
     const log = opts.logFile ? fs.createWriteStream(opts.logFile, { flags: "a" }) : null;
     let out = "";
+    let pending = ""; // output since the last watch window
     let lastOutput = Date.now();
     const take = (b: Buffer) => {
       lastOutput = Date.now();
       const s = b.toString();
       out += s;
       if (out.length > 4_000_000) out = out.slice(-2_000_000);
+      if (opts.watchMs) pending = (pending + s).slice(-1_000_000);
       log?.write(s);
     };
     child.stdout.on("data", take);
@@ -85,12 +123,27 @@ export function shell(
           }
         }, 15_000)
       : undefined;
+    // the supervisor's check-in: every window, is the agent still making progress?
+    const seen = new Set<string>();
+    const watch = opts.watchMs
+      ? setInterval(() => {
+          const w = { minutes: Math.round((Date.now() - started) / 60_000), ...watchWindow(pending, seen) };
+          pending = "";
+          opts.onWatch?.(w);
+          if (w.verdict !== "ok") {
+            stalled = true;
+            out += `\n[engine] stopped by the watch: ${w.verdict} (${w.newLines} new lines, ${w.repeated} repeated)\n`;
+            killTree(child.pid, opts.killMarkers);
+          }
+        }, opts.watchMs)
+      : undefined;
     let done = false;
     const finish = (code: number | null, extra = "") => {
       if (done) return;
       done = true;
       clearTimeout(timer);
       if (idle) clearInterval(idle);
+      if (watch) clearInterval(watch);
       log?.end();
       resolve({ code, out: out + extra, timedOut, stalled, ms: Date.now() - started });
     };

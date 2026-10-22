@@ -6,7 +6,7 @@ import path from "node:path";
 import { classify } from "../src/adapters/common.ts";
 import { pickReady, ownFollowUps } from "../src/nodes/flow.ts";
 import type { RunState, Task } from "../src/types.ts";
-import { git, shell } from "../src/util.ts";
+import { git, shell, watchWindow, type WatchInfo } from "../src/util.ts";
 
 const task = (id: string, deps: string[] = [], status: Task["status"] = "pending"): Task => ({
   id, title: id, category: "coding", risk: "low", brief: "", files: [], deps, checks: [], status, attempts: [], excluded: [], reassigns: 0,
@@ -55,5 +55,28 @@ assert.deepEqual(ownFollowUps(["owned by task t4", "`t4` sets the script", "t40 
 assert.equal(classify('404: The free launch period for MiniMax M3.1 Flash ended on Oct 22, 2026. The `:free` variant has been retired', 0, false, 7_000, false), "not_found");
 assert.equal(classify('error: no response from ACP server (the backend may not serve this model)', 1, false, 6_000, false), "no_response");
 assert.equal(classify('', 1, false, 6_000, false), "crash", "an empty quick exit without the marker stays a crash");
+
+// the supervisor's check-in: a window that only repeats earlier lines is a loop (numbers masked),
+// heartbeats are not progress, new lines are
+const seen = new Set<string>();
+const restate = Array.from({ length: 12 }, (_, i) => `Question restated: which port does the server bind, step ${i}`).join("\n");
+assert.equal(watchWindow(restate, seen).verdict, "ok", "the first window has nothing to repeat");
+assert.equal(watchWindow(restate, seen).verdict, "looping");
+assert.equal(watchWindow("[heartbeat] session open, 12 min\n[heartbeat] session open, 13 min", seen).verdict, "no progress");
+assert.equal(watchWindow("read src/config.js\nedited src/server.js line 4", seen).verdict, "ok");
+
+// and through shell(): a looping agent and a heartbeat-only agent are stopped, a working one is not
+const watched = async (script: string) => {
+  const ws: WatchInfo[] = [];
+  const r = await shell(script, { cwd: os.tmpdir(), timeoutMs: 20_000, watchMs: 1_500, onWatch: (w) => ws.push(w) });
+  return { r, ws };
+};
+const loop = await watched("while true; do echo 'Question restated: which port does it bind'; sleep 0.05; done");
+assert.ok(loop.r.stalled && /stopped by the watch: looping/.test(loop.r.out), loop.r.out.slice(-200));
+const quiet = await watched("while true; do echo '[heartbeat] still here'; sleep 0.2; done");
+assert.ok(quiet.r.stalled && /no progress/.test(quiet.r.out), quiet.r.out.slice(-200));
+const busy = await watched("for i in 1 2 3; do echo \"reading file number $i of the project\"; sleep 0.1; done");
+assert.equal(busy.r.stalled, false);
+assert.equal(busy.r.code, 0);
 
 console.log("pick PASS");

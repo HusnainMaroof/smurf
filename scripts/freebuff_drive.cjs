@@ -303,6 +303,7 @@ async function chooseModel(name) {
   await typeText(prompt);
   await sleep(500);
   term.write("\r");
+  const sentAt = Date.now();
   console.log(`[freebuff] prompt sent (${prompt.length} chars) in ${cwd}`);
 
   let continues = 0;
@@ -340,7 +341,22 @@ async function chooseModel(name) {
       }
     }
   }, 5000);
-  const heartbeat = setInterval(() => console.log(`[freebuff] working, ${Math.round((Date.now() - lastOut) / 1000)} s since last screen update`), 30000);
+  // Every 30 s: the new text the agent drew (no ads, tickers or box lines), so the engine's check-in
+  // can tell progress from a loop; "[heartbeat]" lines keep the idle timer quiet but never count as progress.
+  let shownAt = raw.length;
+  const shown = new Set();
+  const heartbeat = setInterval(() => {
+    const fresh = plain(raw.slice(shownAt))
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length >= 8 && !/^(Thinking|█|•|⎘|△▽)$|in the queue|is answering now|Ad \[Report|hours remaining|^[│╭╰└┌]/.test(l) && !shown.has(l));
+    shownAt = raw.length;
+    for (const l of fresh.slice(0, 15)) {
+      shown.add(l);
+      console.log(`[screen] ${l.slice(0, 200)}`);
+    }
+    console.log(`[heartbeat] freebuff session open, ${Math.round((Date.now() - sentAt) / 60000)} min`);
+  }, 30000);
 
   // The daily hours ran out much faster than one per session in a real run (19 -> 15 in 9 minutes on a
   // looping task): stop once this session has used more than FREEBUFF_MAX_HOURS of the counter.

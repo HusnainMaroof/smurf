@@ -343,6 +343,7 @@ export class Engine extends EventEmitter {
     const inWorktree = path.resolve(o.cwd).startsWith(path.resolve(this.cfg.worktreeRoot));
     // every prompt is kept next to its log, so any decision can be audited later
     fs.writeFileSync(logFile.replace(/\.log$/, ".prompt.txt"), o.prompt);
+    const streams = o.idle !== false && this.cfg.providers[key.split(":")[0]]?.streamsOutput !== false;
     const quota = this.models.quota(key);
     this.busy.set(quota, (this.busy.get(quota) ?? 0) + 1);
     const res = await adapter
@@ -353,7 +354,13 @@ export class Engine extends EventEmitter {
       cwd: o.cwd,
       timeoutMs: o.timeoutMin * 60_000,
       // only for providers that stream output; batch CLIs (claude -p --output-format json) are silent until done
-      idleMs: o.idle !== false && this.cfg.providers[key.split(":")[0]]?.streamsOutput !== false ? (this.cfg.limits.idleMin ?? 8) * 60_000 : undefined,
+      idleMs: streams ? (this.cfg.limits.idleMin ?? 8) * 60_000 : undefined,
+      // the supervisor's check-in on agents that stream output (a silent batch CLI is not stuck)
+      watchMs: streams ? (this.cfg.limits.watchMin ?? 10) * 60_000 : undefined,
+      onWatch: (w) => {
+        this.vault.event(s.id, "watch", { agent: o.logName, model: key, ...w });
+        this.emit("event", { run: s.id, type: "watch", agent: o.logName, model: key, ...w });
+      },
       logFile,
       title,
       // the worktree path is in every agent's prompt argv; never use a shared path like the repo

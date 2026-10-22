@@ -29,7 +29,7 @@ export interface Config {
   senior: { model: string; fallback: string[]; timeoutMin: number };
   terse: Terse;
   budget: { perRunUsd: number; perTaskUsd: number };
-  limits: { maxAttempts: number; maxSameModel: number; reassignsBeforeTierUp: number; maxNodeVisits: number; idleMin?: number };
+  limits: { maxAttempts: number; maxSameModel: number; reassignsBeforeTierUp: number; maxNodeVisits: number; idleMin?: number; watchMin?: number };
   router: {
     weights: Record<"benchmark" | "correctness" | "tools" | "context" | "latency" | "cost", number>;
     prior: number;

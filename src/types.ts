@@ -1,4 +1,5 @@
 // Shared types for the engine and the CLI.
+import type { WatchInfo } from "./util.ts";
 
 export type Mode = "edit" | "readonly";
 export type Risk = "low" | "medium" | "high";
@@ -28,6 +29,8 @@ export interface RunRequest {
   cwd: string;
   timeoutMs: number;
   idleMs?: number; // kill when the agent prints nothing for this long
+  watchMs?: number; // check-in interval: stop the agent when it loops or makes no progress
+  onWatch?: (w: WatchInfo) => void;
   killMarkers?: string[]; // strings unique to this agent's command line (see killTree)
   logFile: string;
   title: string;

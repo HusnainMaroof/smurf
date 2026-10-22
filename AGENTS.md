@@ -58,6 +58,14 @@ default: codemap -> understand -> plan -> approve (risky plans only) -> next
 
 Owner answers: `node src/cli.ts resume <run> --choice <option>`. Accepted work lands on `orch/<run>`; the owner merges it.
 
+## Supervising agents
+
+- Every ~10 minutes while agents run, check each one: `orch summary <run>`, the latest
+  `"watch"` events in `vault/Runs/<run>/events.jsonl`, and the agent's log tail. A loop or a
+  silent agent is stopped, not waited out. The engine's own check-in (`limits.watchMin`) stops
+  agents that loop or make no progress; the `launch-agents` skill has the routine and which agent
+  to launch for which need.
+
 ## Reporting to the owner
 
 - Long work (agent runs, multi-step changes): give a status update about every 15 minutes, and at
