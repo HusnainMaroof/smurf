@@ -1,0 +1,46 @@
+[
+  {
+    "id": "graph-neighbours",
+    "title": "fileNeighbours(): related files from the Graphify graph.json",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/graph.ts", "test/graph.ts", "package.json"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "graph", "cmd": "node test/graph.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts, erasable syntax only, no new packages). Read src/graph.ts and test/pick.ts (test style: node:assert/strict, prints `<name> PASS`).\nGraphify's graph.json (networkx node-link) looks like: { nodes: [{ id: \"math_add\", label: \"add()\", source_file: \"math.js\" }], links: [{ source: \"test\", target: \"math_add\", relation: \"imports\", source_file: \"test.js\" }] }. source_file paths are repo-relative and may use backslashes on Windows.\n1. In src/graph.ts add `export function fileNeighbours(graphFile: string, files: string[], max = 25): string[]`. Return [] when the file is missing or unparsable. Map node id -> source_file (normalise \\ to /). For each link whose two nodes are in different files where exactly one file is in `files` (exact match, or the entry ends with / and the path starts with it): emit `<fromFile> <relation> <toFile>` (direction as in the link, use source node file -> target node file). Deduplicate, sort, cap at max.\n2. Create test/graph.ts: write a small graph.json to a temp dir with 3 files (a.ts imports b.ts, c.ts calls a.ts, one link inside a.ts) and assert fileNeighbours(file, [\"a.ts\"]) equals [\"a.ts imports b.ts\", \"c.ts calls a.ts\"]; a missing file gives []; a folder entry \"src/\" matches \"src/x.ts\". Print `graph PASS`.\n3. package.json: append ` && node test/graph.ts` to the \"test\" script.\nDo not change buildCodeGraph or any other file."
+  },
+  {
+    "id": "worker-neighbours",
+    "title": "Workers see their files' neighbours from the code map",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/prompts.ts", "src/nodes/agent.ts"],
+    "deps": ["graph-neighbours"],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "wired", "cmd": "grep -q 'fileNeighbours' src/nodes/agent.ts && grep -q 'RELATED FILES' src/prompts.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts). src/graph.ts now exports `fileNeighbours(graphFile: string, files: string[], max?: number): string[]` (lines like \"a.ts imports b.ts\"). Read workerPrompt in src/prompts.ts and the agent.delegate node in src/nodes/agent.ts (line ~166 builds the prompt with depReports).\n1. In src/prompts.ts add `neighbours: string[]` to workerPrompt's options object and, right after the `otherTasks(s, t)` entry, add: `o.neighbours.length ? `RELATED FILES (from the code map: what your files use and what uses them; read them when your change affects them, edit only ALLOWED FILES):\n${o.neighbours.join(\"\n\")}` : \"\"`.\n2. In src/nodes/agent.ts import fileNeighbours from \"../graph.ts\" and pass `neighbours: t.files.length ? fileNeighbours(path.join(engine.cfg.vault, \"Code\", s.project.name, \"graph.json\"), t.files) : []` to workerPrompt (import path from node:path if not imported).\nDone when checks pass. Change nothing else."
+  },
+  {
+    "id": "tasks-codemap",
+    "title": "tasks workflow refreshes the code map first",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["workflows/tasks.json"],
+    "deps": [],
+    "checks": [
+      { "name": "workflow", "cmd": "node src/cli.ts workflow tasks | grep -q codemap" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "JSON only. Read workflows/default.json (its first node is {\"id\": \"codemap\", \"type\": \"context.codemap\"} with an edge {\"from\": \"codemap\", \"to\": \"understand\"}) and workflows/tasks.json (\"start\": \"next\").\nIn workflows/tasks.json: 1. add node {\"id\": \"codemap\", \"type\": \"context.codemap\", \"position\": [750, 0]} as the first entry of \"nodes\"; 2. set \"start\" to \"codemap\"; 3. add edge {\"from\": \"codemap\", \"to\": \"next\"} as the first entry of \"edges\". Keep the file's 2-space formatting. Change nothing else."
+  }
+]
