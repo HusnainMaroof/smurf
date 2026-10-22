@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import type { ProviderConfig } from "../config.ts";
 import type { Adapter, ModelInfo, Mode, RunRequest, RunResult } from "../types.ts";
-import { commandExists, posix, shell } from "../util.ts";
+import { commandExists, posix, ROOT, shell } from "../util.ts";
 import { classify, isErrorOnly, REPORT_NAME, stripAnsi } from "./common.ts";
 
 const FAKE_GIT = "/tmp/no-git-for-agents";
@@ -113,7 +113,8 @@ export class CliAdapter implements Adapter {
       .replaceAll("{outFile}", outFile)
       .replaceAll("{timeoutSec}", String(Math.round(req.timeoutMs / 1000)))
       .replaceAll("{title}", q(req.title))
-      .replaceAll("{cwd}", posix(req.cwd));
+      .replaceAll("{cwd}", posix(req.cwd))
+      .replaceAll("{root}", posix(ROOT));
     fs.writeFileSync(req.logFile, `$ ${line}\n\n`);
     const r = await shell(line, {
       cwd: req.cwd,

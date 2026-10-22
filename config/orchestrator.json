@@ -256,14 +256,39 @@
     },
     "freebuff": {
       "kind": "cli",
-      "enabled": false,
-      "_note": "Freebuff CLI (free, ad-funded; prompts may be used for training unless opted out). Cannot be used yet: no headless mode (a prompt argument is rejected, stdin opens the TUI), tested 2026-10-22.",
+      "enabled": true,
+      "_note": "Freebuff has no headless mode: scripts/freebuff_drive.cjs drives its TUI through a ConPTY (node-pty), picks the model in /model, auto-answers question menus and continue prompts, and finishes when .orch-report.md is stable for 60 s. Ads still show in the session. Starter plan: about 21 hours a day, roughly 1 hour per session; UNLIMITED models do not use hours. Paid hours are never confirmed unless FREEBUFF_ALLOW_PAID=1. Prompts may be used for training unless opted out in Freebuff settings. List the picker: node scripts/freebuff_drive.cjs models.",
       "command": "freebuff",
       "billing": "free",
       "isolateGit": true,
-      "parse": "text",
-      "run": {},
-      "models": []
+      "parse": "claude-json",
+      "streamsOutput": true,
+      "run": {
+        "readonly": "node '{root}/scripts/freebuff_drive.cjs' run --cwd '{cwd}' --prompt-file '{promptFile}' --max-sec {timeoutSec} --model '{model}'",
+        "edit": "node '{root}/scripts/freebuff_drive.cjs' run --cwd '{cwd}' --prompt-file '{promptFile}' --max-sec {timeoutSec} --model '{model}'"
+      },
+      "models": [
+        {
+          "model": "Nemotron 3.5 Lightning",
+          "tier": "light"
+        },
+        {
+          "model": "Glyph Cluster",
+          "tier": "strong"
+        },
+        {
+          "model": "GLM 5.3 Flash",
+          "tier": "strong"
+        },
+        {
+          "model": "Muse Spark 1.3",
+          "tier": "strong"
+        },
+        {
+          "model": "GPT-6 Luna",
+          "tier": "strong"
+        }
+      ]
     },
     "openrouter": {
       "kind": "api",

@@ -84,6 +84,14 @@ and `openhands-tools` (runner: `scripts/openhands_agent.py`). Add a backend unde
 `providers.openhands.backends`: its ACP command, optional env prefix, and the ACP
 session mode for `readonly` and `edit`.
 
+Freebuff (a `cli` provider) has no headless mode, so `scripts/freebuff_drive.cjs` drives its TUI
+through a ConPTY: it picks the model in `/model`, types the prompt, answers question menus and
+"continue" pauses, and finishes when `.orch-report.md` is stable for 60 s. Keys use the picker
+names (`freebuff:GLM 5.3 Flash`); `node scripts/freebuff_drive.cjs models` lists them. It needs
+`node-pty` (`npm run setup -- --freebuff`). Paid hours are never confirmed unless
+`FREEBUFF_ALLOW_PAID=1`; the starter plan's daily hours run out about one per session, except for
+the UNLIMITED models. If Freebuff's screens change, `node scripts/freebuff_drive.cjs probe`.
+
 ## Token saving (Caveman style)
 
 `"terse": "off" | "lite" | "full" | "ultra"` makes agent-to-agent text (reports,

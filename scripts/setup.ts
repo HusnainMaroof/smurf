@@ -43,6 +43,14 @@ async function main() {
       if (r.code !== 0) console.log(`openhands install failed (exit ${r.code})`);
     }
   }
+
+  // Freebuff has no headless mode; scripts/freebuff_drive.cjs drives its TUI through node-pty,
+  // kept outside the repo like the openhands venv so the orchestrator itself stays dependency-free
+  if (process.argv.includes("--freebuff")) {
+    const r = await shell('npm install --no-audit --no-fund --prefix "$HOME/.orch/node-pty" node-pty', { cwd: ROOT, timeoutMs: 600_000 });
+    console.log(tail(r.out));
+    console.log(r.code === 0 ? "node-pty installed in ~/.orch/node-pty; check with: node scripts/freebuff_drive.cjs probe" : `node-pty install failed (exit ${r.code})`);
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
