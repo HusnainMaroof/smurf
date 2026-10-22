@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { pickReady } from "../src/nodes/flow.ts";
 import type { RunState, Task } from "../src/types.ts";
-import { git } from "../src/util.ts";
+import { git, shell } from "../src/util.ts";
 
 const task = (id: string, deps: string[] = [], status: Task["status"] = "pending"): Task => ({
   id, title: id, category: "coding", risk: "low", brief: "", files: [], deps, checks: [], status, attempts: [], excluded: [], reassigns: 0,
@@ -36,5 +36,16 @@ process.env.GIT_DIR = "/nonexistent";
 assert.equal(git(tmp, "rev-parse", "--git-dir").ok, true, "git ignores a leaked GIT_DIR");
 delete process.env.GIT_DIR;
 fs.rmSync(tmp, { recursive: true, force: true });
+
+// a leaked GIT_DIR must not break shell() commands, but an explicit env must still win
+const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), "orch-shell-env-"));
+git(tmp2, "init", "-q");
+process.env.GIT_DIR = "/nonexistent";
+const r1 = await shell("git rev-parse --git-dir", { cwd: tmp2, timeoutMs: 30_000 });
+assert.equal(r1.code, 0, "shell ignores a leaked GIT_DIR");
+const r2 = await shell("echo $GIT_DIR", { cwd: tmp2, timeoutMs: 30_000, env: { GIT_DIR: "/x" } });
+assert.equal(r2.out.trim(), "/x", "an explicit env wins over the filter");
+delete process.env.GIT_DIR;
+fs.rmSync(tmp2, { recursive: true, force: true });
 
 console.log("pick PASS");
