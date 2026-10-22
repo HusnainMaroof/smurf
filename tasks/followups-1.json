@@ -1,0 +1,47 @@
+[
+  {
+    "id": "shell-env-clean",
+    "title": "Check commands ignore a leaked GIT_DIR / GIT_WORK_TREE too",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["src/util.ts", "test/pick.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "pick", "cmd": "node test/pick.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read src/util.ts: `GIT_ENV_LEAKS` and `git()` already drop GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE from the env; `shell()` builds `const env = { ...process.env, ...opts.env }`. Check commands and bench go through shell(), so a leak still breaks them. Adapters with isolateGit pass their own GIT_DIR in opts.env and that must keep working.\n1. In shell(): start from a copy of process.env without the GIT_ENV_LEAKS keys (same case-insensitive filter as git()), then spread opts.env on top. Keep the CLAUDECODE delete.\n2. In test/pick.ts, after the existing GIT_DIR test (before `pick PASS`): with process.env.GIT_DIR = \"/nonexistent\", `await shell(\"git rev-parse --git-dir\", { cwd: <a temp git repo>, timeoutMs: 30_000 })` has code 0; and `await shell(\"echo $GIT_DIR\", { cwd, timeoutMs: 30_000, env: { GIT_DIR: \"/x\" } })` prints /x. Restore the env afterwards. Import shell from ../src/util.ts.\nChange nothing else."
+  },
+  {
+    "id": "neighbours-dedupe",
+    "title": "RELATED FILES: one line per relation, no imports/imports_from pairs",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["src/graph.ts", "test/graph.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "graph", "cmd": "node test/graph.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read fileNeighbours in src/graph.ts and test/graph.ts. Graphify emits both `imports` and `imports_from` for the same import, so each line shows up twice (\"src/cli.ts imports src/graph.ts\" and \"src/cli.ts imports_from src/graph.ts\").\n1. In fileNeighbours, normalise the relation by removing a trailing `_from` (imports_from -> imports) before building the line, so the existing Set deduplicates it.\n2. In test/graph.ts add a case: a graph where x.ts has both an `imports` and an `imports_from` link to a.ts gives exactly one line \"x.ts imports a.ts\" for files [\"a.ts\"]. Keep the existing assertions passing.\nChange nothing else."
+  },
+  {
+    "id": "lessons-cleanup",
+    "title": "Lessons: reuse followUps(), follow-ups only from the newest run",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 25,
+    "files": ["src/lessons.ts", "test/lessons.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "lessons", "cmd": "node test/lessons.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read src/lessons.ts (pastLessons, a private followUps copy) and `export function followUps(report: string): string[]` in src/nodes/flow.ts (parses a `## Follow-ups` section, handles wrapped bullets and drops 'None.').\nProblem from a real run: follow-ups of older runs that were since fixed keep coming back as lessons.\n1. Delete the private followUps in src/lessons.ts and import followUps from \"./nodes/flow.ts\".\n2. Take follow-up lines only from the newest selected run (index 0 after sorting); failed/skipped/retried task lines still come from all selected runs. Keep the order: for each run, task lines, then (newest run only) follow-up lines.\n3. Update test/lessons.ts: follow-ups of an older run are no longer included; the newest run's still are. Keep the other assertions.\nChange nothing else."
+  }
+]
