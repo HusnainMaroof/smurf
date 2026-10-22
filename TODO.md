@@ -9,6 +9,11 @@ runs; engine `git()` ignores a leaked GIT_DIR/GIT_WORK_TREE; project notes in `v
 
 ## Next
 
+- [ ] Low-risk tasks get no independent review (only checks): decide if testing/coding tasks need one,
+      or review a random sample. Found in the clsx end-to-end run (only the medium task was reviewed).
+- [ ] Agents still list other tasks' work as follow-ups despite OTHER TASKS in the prompt (clsx t2, t3).
+- [ ] Senior questions with options: offer those options as resume choices, not only 'answer'.
+
 - [ ] `shell()` still passes a leaked GIT_DIR/GIT_WORK_TREE to check commands: filter it there too
       (adapters with `isolateGit` re-add their own through `opts.env`).
 - [ ] RELATED FILES lists each link twice (`imports` and `imports_from`): keep one per file pair.
