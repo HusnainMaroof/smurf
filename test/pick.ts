@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { pickReady } from "../src/nodes/flow.ts";
+import { pickReady, ownFollowUps } from "../src/nodes/flow.ts";
 import type { RunState, Task } from "../src/types.ts";
 import { git, shell } from "../src/util.ts";
 
@@ -47,5 +47,7 @@ const r2 = await shell("echo $GIT_DIR", { cwd: tmp2, timeoutMs: 30_000, env: { G
 assert.equal(r2.out.trim(), "/x", "an explicit env wins over the filter");
 delete process.env.GIT_DIR;
 fs.rmSync(tmp2, { recursive: true, force: true });
+
+assert.deepEqual(ownFollowUps(["owned by task t4", "`t4` sets the script", "t40 is fine", "add a cache"], ["t4"]), ["t40 is fine", "add a cache"]);
 
 console.log("pick PASS");

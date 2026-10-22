@@ -23,6 +23,14 @@ export function followUps(report: string): string[] {
   return items.filter((l) => !/^(none|n\/a|nothing)(\s*[.!:;,—–-]|$)/i.test(l));
 }
 
+/** Drop follow-up items that mention another task's id as a whole word (backticks don't make it a word). */
+export function ownFollowUps(items: string[], otherIds: string[]): string[] {
+  if (!otherIds.length) return items.slice();
+  const escaped = otherIds.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp(`(?<!\\w)(?:${escaped.join("|")})(?!\\w)`);
+  return items.filter((item) => !re.test(item));
+}
+
 /** Skips tasks whose dependencies failed, then returns the first pending task whose dependencies are accepted and that `free` allows. */
 export function pickReady(s: RunState, free: (t: Task) => boolean, log: (msg: string) => void): Task | undefined {
   let changed = true;
@@ -188,7 +196,7 @@ export const flowNodes: NodeType[] = [
         const a = t.attempts.find((x) => x.decision === "accept") ?? t.attempts[t.attempts.length - 1];
         if (!a) return [];
         const report = a.reportFile && fs.existsSync(a.reportFile) ? fs.readFileSync(a.reportFile, "utf8") : "";
-        const notes = followUps(report).map((n) => `- **${t.id}** (agent): ${n}`);
+        const notes = ownFollowUps(followUps(report), s.tasks.filter((x) => x.id !== t.id).map((x) => x.id)).map((n) => `- **${t.id}** (agent): ${n}`);
         const findings = (a.review?.findings ?? []).map((f) => `- **${t.id}** (review, ${f.severity}): ${f.file ? `\`${f.file}\` ` : ""}${f.issue}`);
         const reverted = a.evidence?.reverted?.length ? [`- **${t.id}** (engine): undid out-of-scope edits to ${a.evidence.reverted.map((f) => `\`${f}\``).join(", ")}; check whether they were needed`] : [];
         const left = t.status === "accepted" ? a.blocked.map((b) => `- **${t.id}** (agent, left undone): ${b.replace(/^[-*\s]*(\*\*)?BLOCKED:(\*\*)?\s*/i, "")}`) : [];
