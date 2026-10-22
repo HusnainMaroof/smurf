@@ -239,14 +239,14 @@
     "commandcode": {
       "kind": "cli",
       "enabled": false,
-      "_note": "Command Code CLI. Headless works (-p, prompt on stdin, tested 2026-10-22) but the account has no credits (pay-as-you-go). It exits 0 even on errors and its --output-format json is an NDJSON event stream the adapter cannot parse yet, so it uses text output. Enable after buying credits and a small bench run.",
+      "_note": "Command Code CLI. Headless works (-p, prompt on stdin, tested 2026-10-22) and the NDJSON output of --output-format json is parsed now (parse: commandcode-json), but the account has no credits (pay-as-you-go). Enable after buying credits and a small bench run.",
       "command": "commandcode",
       "billing": "metered",
       "isolateGit": true,
-      "parse": "text",
+      "parse": "commandcode-json",
       "run": {
-        "readonly": "commandcode -p --trust --plan -m {model} < '{promptFile}'",
-        "edit": "commandcode -p --trust -m {model} < '{promptFile}'"
+        "readonly": "commandcode -p --trust --plan --output-format json -m {model} < '{promptFile}'",
+        "edit": "commandcode -p --trust --output-format json -m {model} < '{promptFile}'"
       },
       "models": [
         { "model": "deepseek/deepseek-v4-flash", "tier": "strong" },
