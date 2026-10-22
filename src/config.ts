@@ -10,7 +10,7 @@ export interface ProviderConfig {
   command?: string;
   isolateGit?: boolean;
   streamsOutput?: boolean; // false: prints only at the end, so no stall detection
-  parse?: "text" | "claude-json" | "out-file";
+  parse?: "text" | "claude-json" | "commandcode-json" | "out-file";
   answerAfter?: string;
   prestart?: string; // run once per process from ~/.orch before the first run, e.g. start a shared daemon outside any worktree
   run?: Partial<Record<Mode, string>>;

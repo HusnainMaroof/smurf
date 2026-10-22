@@ -210,6 +210,7 @@ export const seniorNodes: NodeType[] = [
         latencySec: Math.round(a.latencyMs / 1000),
         costUsd: +a.costUsd.toFixed(5),
         tokensIn: Math.round(a.tokensIn),
+        tokensCached: a.tokensCached === undefined ? undefined : Math.round(a.tokensCached),
         tokensOut: Math.round(a.tokensOut),
         retryIndex: a.n - 1,
         reviewScore: a.review?.score ?? null,
