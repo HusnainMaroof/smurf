@@ -4,29 +4,20 @@ State on 2026-10-22: the orchestrator lives at the repo root. Commands run from 
 `ORCH_CONFIG=config/free-only.json` for runs. Fresh clone: `npm install && npm run setup`.
 
 Done on 2026-10-22: `orch abort`; research-not-docs plan rule; flatten + `npm run setup`; code map
-for `tasks` runs; workers get RELATED FILES from the code map; senior gets LESSONS from recent
-runs; engine `git()` ignores a leaked GIT_DIR/GIT_WORK_TREE; project notes in `vault/Projects/orch.md`.
+for `tasks` runs; RELATED FILES for workers; LESSONS for the senior; git env leak fixed in `git()` and
+`shell()`; senior questions as text with numbered resume choices; checks not run when nothing in
+scope changed (`checksSkipped`); follow-ups about other tasks dropped; summary shows working tasks;
+OpenHands cache reads stored apart (`tokensCached`); coding/testing/debugging always reviewed.
+End-to-end tests on a cloned repo (`~/orch-e2e/clsx`): happy path and failure paths both pass.
 
 ## Next
 
-- [ ] When every change is out of scope the files are kept and checks run on them, so evidence shows
-      "checks 1/1" next to "scope VIOLATED" (clsx failure-path run, attempt 4). Mark such check passes
-      as not counting, or run checks after setting the stray files aside.
-- [ ] An attempt with no changes reports "checks 0/0": say "checks not run (no changes)".
-
-- [ ] Low-risk tasks get no independent review (only checks): decide if testing/coding tasks need one,
-      or review a random sample. Found in the clsx end-to-end run (only the medium task was reviewed).
-- [ ] Agents still list other tasks' work as follow-ups despite OTHER TASKS in the prompt (clsx t2, t3).
-- [ ] Senior questions with options: offer those options as resume choices, not only 'answer'.
-
-- [ ] `shell()` still passes a leaked GIT_DIR/GIT_WORK_TREE to check commands: filter it there too
-      (adapters with `isolateGit` re-add their own through `opts.env`).
-- [ ] RELATED FILES lists each link twice (`imports` and `imports_from`): keep one per file pair.
-- [ ] `src/lessons.ts` has its own `followUps()`; reuse the one in `src/nodes/flow.ts`.
-- [ ] Lessons repeat follow-ups that were already fixed: drop follow-ups of merged runs older than
-      the newest merge, or let the owner mark them done.
-- [ ] `orch summary` shows a task as "not started" while its agent is working.
-- [ ] OpenHands `tokensIn` is cumulative per turn; store cache reads separately.
-- [ ] Command Code and Freebuff are in the config but disabled. Freebuff has no headless mode
-      (prompt argument rejected, stdin opens the TUI); Command Code is untested.
+- [ ] Undo of out-of-scope edits next to good work was never triggered by a real model (agents
+      stayed in scope); only the mock test covers it.
+- [ ] Command Code: configured but disabled (no credits). Its `--output-format json` is an NDJSON
+      event stream (`{"type":"result",...,"finalText"}`) and it exits 0 on errors: add a parse mode
+      before enabling. Freebuff: no headless mode.
+- [ ] `kilo:kilo/minimax/minimax-m3.1-flash:free` returned `not_found` twice on 2026-10-22: check
+      whether the model is gone (`orch models --refresh`).
+- [ ] Bench, senior and bench nodes do not record `tokensCached` yet (only delegate and review do).
 - [ ] Run `node src/cli.ts bench --random 3 --per-task 2` now and then so the router learns new models.
