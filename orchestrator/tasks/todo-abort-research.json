@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cli-abort",
+    "title": "Add `orch abort <run>` CLI command",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["orchestrator/src/cli.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "cd orchestrator && npx tsc --noEmit" },
+      { "name": "usage", "cmd": "cd orchestrator && node src/cli.ts abort; test $? -ne 0" },
+      { "name": "help", "cmd": "cd orchestrator && node src/cli.ts | grep -q 'orch abort <run>'" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (no build), folder orchestrator/. Read orchestrator/src/cli.ts (the HELP string and the `case \"resume\":` block) and `abort(id: string)` in orchestrator/src/engine.ts (returns \"stopping\" | \"aborted\" | \"done\", throws if another process runs it). Do not change engine.ts.\n1. In the HELP string, right after the two `orch resume` lines, add: `  orch abort <run>                       stop a run (a waiting run at once); its branches stay`, aligned like the other lines.\n2. Add `case \"abort\": {` next to `case \"resume\"`: if `!args[0]` throw `new Error(\"usage: orch abort <run>\")`; otherwise `console.log(`${args[0]}: ${engine.abort(args[0])}`)`; then `break;`.\nDone when the three checks pass. Change only orchestrator/src/cli.ts."
+  },
+  {
+    "id": "plan-research",
+    "title": "Plan prompt: read-only requests become research tasks, not docs",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["orchestrator/src/prompts.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "cd orchestrator && npx tsc --noEmit" },
+      { "name": "tests", "cmd": "cd orchestrator && npm test" },
+      { "name": "rule", "cmd": "cd orchestrator && grep -q 'category research' src/prompts.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24, folder orchestrator/. Read `planPrompt` in orchestrator/src/prompts.ts, the RULES array. Bug from a real run: the senior turned \"explain X (research only)\" into a `docs` task, which edits files.\n1. In the RULES array, directly after the line starting \"- files: exact repo-relative paths\", add one string: \"- When the request only asks to explain, investigate, analyse or answer a question (nothing should change), use category research with files [] and no checks; the report is the answer. Use docs only when the request asks to write or change documentation files.\"\nDone when the checks pass. Change nothing else; keep the 'ORCH:senior.plan' marker and the JSON example unchanged."
+  }
+]
