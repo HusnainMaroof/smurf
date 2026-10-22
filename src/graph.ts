@@ -36,7 +36,8 @@ export function fileNeighbours(graphFile: string, files: string[], max = 25): st
   const inFiles = (f: string) => wanted.some((w) => w === f || (w.endsWith("/") && f.startsWith(w)));
   const out = new Set<string>();
   for (const l of Array.isArray(graph.links) ? graph.links : []) {
-    const relation = (l.relation ?? "").trim();
+    // graphify emits "imports" and "imports_from" for the same import: normalise so it is one line
+    const relation = (l.relation ?? "").trim().replace(/_from$/, "");
     const sid = l.source == null ? "" : String(l.source);
     const tid = l.target == null ? "" : String(l.target);
     // an unknown source node still tells its file: the link was found there
