@@ -55,4 +55,21 @@ fs.writeFileSync(
 assert.deepEqual(fileNeighbours(folderGraph, ["src/"]), ["src/x.ts imports lib/o.ts"]);
 assert.deepEqual(fileNeighbours(folderGraph, ["src/x.ts"]), ["src/x.ts imports lib/o.ts"]);
 
+// graphify emits "imports" and "imports_from" for the same import: one line
+const dupGraph = path.join(tmp, "dup.json");
+fs.writeFileSync(
+  dupGraph,
+  JSON.stringify({
+    nodes: [
+      { id: "x", label: "x.ts", source_file: "x.ts" },
+      { id: "da", label: "a.ts", source_file: "a.ts" },
+    ],
+    links: [
+      { source: "x", target: "da", relation: "imports", source_file: "x.ts" },
+      { source: "x", target: "da", relation: "imports_from", source_file: "x.ts" },
+    ],
+  }),
+);
+assert.deepEqual(fileNeighbours(dupGraph, ["a.ts"]), ["x.ts imports a.ts"]);
+
 console.log("graph PASS");
