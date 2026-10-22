@@ -206,7 +206,7 @@ export const seniorNodes: NodeType[] = [
         risk: t.risk,
         source: "run",
         success: decision === "accept",
-        checksPassed: !!ev && ev.scopeOk && ev.checksOk,
+        checksPassed: !!ev && ev.scopeOk && ev.checksOk && !ev.checksSkipped,
         latencySec: Math.round(a.latencyMs / 1000),
         costUsd: +a.costUsd.toFixed(5),
         tokensIn: Math.round(a.tokensIn),
