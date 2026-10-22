@@ -179,6 +179,7 @@ export const agentNodes: NodeType[] = [
         failure: res.failure,
         costUsd: res.costUsd,
         tokensIn: res.tokensIn,
+        tokensCached: res.tokensCached === undefined ? undefined : Math.round(res.tokensCached),
         tokensOut: res.tokensOut,
         reportFile,
         blocked: blockedLines(res.text),
@@ -272,7 +273,7 @@ export const agentNodes: NodeType[] = [
         engine.vault.recordExecution({
           run: s.id, task: `${t.id}-review`, attempt: a.n, model: c.key, adapter: c.key.split(":")[0], category: "review", risk: t.risk, source: "run",
           success: !!data, checksPassed: !!data, latencySec: Math.round(res.latencyMs / 1000), costUsd: +res.costUsd.toFixed(5),
-          tokensIn: Math.round(res.tokensIn), tokensOut: Math.round(res.tokensOut), retryIndex: 0, reviewScore: null, toolFailure: res.failure ?? "",
+          tokensIn: Math.round(res.tokensIn), tokensCached: res.tokensCached === undefined ? undefined : Math.round(res.tokensCached), tokensOut: Math.round(res.tokensOut), retryIndex: 0, reviewScore: null, toolFailure: res.failure ?? "",
           decision: data ? "review" : "review-failed", date: now(),
         });
         if (data && typeof data.score === "number") {

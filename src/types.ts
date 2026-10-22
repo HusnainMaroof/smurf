@@ -41,6 +41,7 @@ export interface RunResult {
   exitCode: number | null;
   latencyMs: number;
   tokensIn: number;
+  tokensCached?: number;
   tokensOut: number;
   costUsd: number;
   failure?: Failure;
@@ -95,6 +96,7 @@ export interface Attempt {
   failure?: Failure;
   costUsd: number;
   tokensIn: number;
+  tokensCached?: number;
   tokensOut: number;
   reportFile: string;
   blocked: string[];

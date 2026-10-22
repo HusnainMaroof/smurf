@@ -32,6 +32,7 @@ export interface Execution {
   latencySec: number;
   costUsd: number;
   tokensIn: number;
+  tokensCached?: number;
   tokensOut: number;
   retryIndex: number;
   reviewScore: number | null;
@@ -183,7 +184,7 @@ export class Vault {
       return [
         `### Attempt ${a.n}: ${modelLink(a.model)}`,
         `- Decision: **${a.decision ?? (a.reason ? "-" : "pending")}**${a.reason ? `, ${a.reason}` : ""}`,
-        `- Latency ${(a.latencyMs / 1000).toFixed(0)} s, cost $${a.costUsd.toFixed(4)}, tokens ${a.tokensIn}/${a.tokensOut}${a.failure ? `, tool failure: ${a.failure}` : ""}`,
+        `- Latency ${(a.latencyMs / 1000).toFixed(0)} s, cost $${a.costUsd.toFixed(4)}, tokens ${a.tokensIn}/${a.tokensOut}${a.tokensCached && a.tokensCached > 0 ? ` (+${a.tokensCached} cached)` : ""}${a.failure ? `, tool failure: ${a.failure}` : ""}`,
         a.blocked.length ? `- Escalations:\n${a.blocked.map((b) => `  - ${b}`).join("\n")}` : "",
         scope ? `- Changed files:\n${scope}` : "",
         checks ? `- Checks:\n${checks}` : "",
