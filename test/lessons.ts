@@ -24,7 +24,7 @@ const current = run("r4", "app", "2026-04-01", [task("t8", "failed", 1)]);
 
 const runs = [
   { s: older, report: "## Follow-ups\n- check the docs\n- keep an eye on retries\n\n## Other\n- ignored\n" },
-  { s: newer, report: "## Summary\n- not a follow-up\n" },
+  { s: newer, report: "## Follow-ups\n- not a follow-up\n" },
   { s: other, report: "## Follow-ups\n- other project\n" },
   { s: current, report: "## Follow-ups\n- current run\n" },
 ];
@@ -46,15 +46,15 @@ assert.ok(lines.includes("r1: task t1 (T t1) failed after 2 attempt(s): broke"))
 assert.ok(lines.includes("r2: task t2 (T t2) skipped after 0 attempt(s)"));
 // retried then accepted
 assert.ok(lines.includes("r2: task t3 (T t3) needed 3 attempts: needed a rewrite"));
-// follow-ups of the older run
-assert.ok(lines.includes("r1: check the docs"));
-assert.ok(lines.includes("r1: keep an eye on retries"));
-// follow-ups of the newer run
-assert.ok(lines.includes("r2: not a follow-up") === false);
+// follow-ups of the older run are no longer included
+assert.ok(!lines.some((l) => l.includes("check the docs")));
+assert.ok(!lines.some((l) => l.includes("keep an eye on retries")));
+// follow-ups of the newer run (the newest selected) still are
+assert.ok(lines.includes("r2: not a follow-up"));
 
 // max cap
 assert.equal(pastLessons(runs, "app", "r4", 5, 2).length, 2);
-assert.equal(pastLessons(runs, "app", "r4", 1).length, 2);
+assert.equal(pastLessons(runs, "app", "r4", 1).length, 3);
 // maxRuns keeps only the newest runs
 assert.ok(pastLessons(runs, "app", "r4", 1).every((l) => l.startsWith("r2: ")));
 

@@ -1,4 +1,5 @@
 // What went wrong in a project's recent runs: failed tasks, retried tasks and follow-ups.
+import { followUps } from "./nodes/flow.ts";
 import type { RunState, Task } from "./types.ts";
 
 function clip(text: string, max = 200): string {
@@ -8,23 +9,6 @@ function clip(text: string, max = 200): string {
 
 function critiquePart(task: Task): string {
   return task.critique ? `: ${clip(task.critique)}` : "";
-}
-
-function followUps(report: string): string[] {
-  const lines = report.split(/\r?\n/);
-  const out: string[] = [];
-  let inFollow = false;
-  for (const line of lines) {
-    if (line.startsWith("## ")) {
-      inFollow = line.slice(3).trim().toLowerCase() === "follow-ups";
-      continue;
-    }
-    if (!inFollow) continue;
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("- ")) continue;
-    out.push(trimmed.slice(2).trim());
-  }
-  return out;
 }
 
 export function pastLessons(
@@ -39,7 +23,7 @@ export function pastLessons(
     .sort((a, b) => (a.s.createdAt < b.s.createdAt ? 1 : a.s.createdAt > b.s.createdAt ? -1 : 0))
     .slice(0, maxRuns);
   const out: string[] = [];
-  for (const { s, report } of mine) {
+  for (const [i, { s, report }] of mine.entries()) {
     const prefix = `${s.id}: `;
     for (const task of s.tasks) {
       if (task.status === "failed" || task.status === "skipped") {
@@ -49,8 +33,11 @@ export function pastLessons(
         out.push(`${prefix}task ${task.id} (${task.title}) needed ${task.attempts.length} attempts${critiquePart(task)}`);
       }
     }
-    for (const f of followUps(report)) {
-      out.push(`${prefix}${clip(f)}`);
+    // follow-ups only from the newest selected run (index 0); older runs' follow-ups may be stale
+    if (i === 0) {
+      for (const f of followUps(report)) {
+        out.push(`${prefix}${clip(f)}`);
+      }
     }
   }
   return out.slice(0, max);
