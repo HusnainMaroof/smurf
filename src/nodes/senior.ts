@@ -20,7 +20,12 @@ export const seniorNodes: NodeType[] = [
     params: [{ name: "askQuestions", type: "boolean", default: true, description: "Pause for the owner when the senior has blocking questions." }],
     async run({ engine, s, params, log }) {
       if (s.input && s.waiting?.kind === "question") {
-        s.request += `\n\nOwner answers: ${s.input.note || s.input.choice}`;
+        let answer = s.input.note || s.input.choice;
+        if (s.waiting.question && s.input.choice && s.input.choice !== "answer") {
+          const optionText = parseOptionText(s.waiting.question, s.input.choice);
+          answer = `${optionText}${s.input.note ? ` (note: ${s.input.note})` : ""}`;
+        }
+        s.request += `\n\nOwner answers: ${answer}`;
         s.waiting = undefined;
         s.input = undefined;
       }
@@ -35,7 +40,8 @@ export const seniorNodes: NodeType[] = [
       };
       log(`understood by ${key}: ${s.understanding.goal}`);
       if (params.askQuestions && s.understanding.questions.length) {
-        s.waiting = { kind: "question", question: s.understanding.questions.join("\n"), options: ["answer"] };
+        const extraOptions = questionChoices(data.questions);
+        s.waiting = { kind: "question", question: s.understanding.questions.join("\n"), options: ["answer", ...extraOptions] };
         return WAIT;
       }
       return "out";
@@ -232,4 +238,24 @@ function asText(x: unknown): string {
   const why = typeof o.whyBlocking === "string" ? ` (why it matters: ${o.whyBlocking})` : "";
   const opts = Array.isArray(o.options) && o.options.length ? ` Options: ${o.options.map((p, i) => `(${i + 1}) ${String(p)}`).join(" ")}` : "";
   return main + why + opts;
+}
+
+/** Extract numbered choices from questions array: if first element is an object with non-empty options, return ["1", "2", ...]. */
+export function questionChoices(raw: unknown): string[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  const first = raw[0];
+  if (first === null || typeof first !== "object") return [];
+  const o = first as Record<string, unknown>;
+  const opts = o.options;
+  if (!Array.isArray(opts) || opts.length === 0) return [];
+  return opts.map((_, i) => String(i + 1));
+}
+
+/** Parse the option text from a question string like "(N) text" up to " (N+1) " or end of line. */
+function parseOptionText(question: string, choice: string): string {
+  const num = parseInt(choice, 10);
+  if (isNaN(num) || num < 1) return choice;
+  const pattern = new RegExp(`\\(${num}\\)\\s+([^\\n]*?)(?=\\s+\\(${num + 1}\\)|\\n|$)`);
+  const match = question.match(pattern);
+  return match ? match[1].trim() : choice;
 }
