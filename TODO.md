@@ -12,6 +12,10 @@ End-to-end tests on a cloned repo (`~/orch-e2e/clsx`): happy path and failure pa
 
 ## Next
 
+- [ ] OpenHands -> cline (ACP) route is broken: cline over ACP finds no credential ("no supported
+      credential source is available"), returns empty in ~6 s, benchmark FAIL "crash" for every model
+      (bench 2026-10-22-14-03). Plain `cline:` works. Fix the ACP login or disable the cline backend.
+
 - [ ] Undo of out-of-scope edits next to good work was never triggered by a real model (agents
       stayed in scope); only the mock test covers it.
 - [ ] Command Code: configured but disabled (no credits). Its `--output-format json` is an NDJSON
