@@ -1,8 +1,0 @@
-{"subject":"cline:poolside/laguna-s-2.1:free","predicate":"verdict:ui-polish","object":"refine","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard G"}
-{"subject":"freebuff:GPT-6 Luna","predicate":"verdict:client-feature","object":"approve","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard B"}
-{"subject":"opencode:opencode/deepseek-v4.1-flash-free","predicate":"verdict:client-feature","object":"approve","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard C"}
-{"subject":"cline:poolside/laguna-s-2.1:free","predicate":"verdict:backend-fix","object":"refine","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard D"}
-{"subject":"cline:poolside/laguna-s-2.1:free","predicate":"verdict:browser-test","object":"refine","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard E"}
-{"subject":"kilo:kilo/kilo-auto/free","predicate":"verdict:ui-polish","object":"reroute","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard K"}
-{"subject":"cline:poolside/laguna-s-2.1:free","predicate":"verdict:investigate","object":"approve","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard t1-probe"}
-{"subject":"opencode:opencode/deepseek-v4.1-flash-free","predicate":"verdict:investigate","object":"approve","valid_from":"2026-10-19T00:00:00.000Z","valid_to":null,"source":"scorecard t2-probe"}
