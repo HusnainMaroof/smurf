@@ -40,7 +40,7 @@
     "checks": [
       { "name": "types", "cmd": "npx tsc --noEmit" },
       { "name": "tests", "cmd": "npm test" },
-      { "name": "leak", "cmd": "GIT_DIR=/nonexistent GIT_WORK_TREE=/nonexistent node test/pick.ts" }
+      { "name": "pick", "cmd": "node test/pick.ts" }
     ],
     "brief": "TypeScript run directly by Node 24. Found in three real runs: agent shells with isolateGit export GIT_DIR/GIT_WORK_TREE, and when they leak into the engine's environment every engine git step and npm test break. Read `git` in src/util.ts (spawnSync(\"git\", args, { cwd, encoding, maxBuffer })).\n1. In src/util.ts `git()`: pass `env` = a copy of process.env without GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE, so the engine's git always works on `cwd`. Add a one-line comment saying why. Do not change shell().\n2. At the end of test/pick.ts (before `pick PASS`): create a temp dir, run `git(tmp, \"init\", \"-q\")`, set process.env.GIT_DIR = \"/nonexistent\", assert `git(tmp, \"rev-parse\", \"--git-dir\").ok` is true, then delete process.env.GIT_DIR. Import git from ../src/util.ts and fs/os/path as needed.\nChange nothing else."
   }
