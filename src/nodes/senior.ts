@@ -2,6 +2,7 @@
 import path from "node:path";
 import type { NodeType } from "./index.ts";
 import { confirmPrompt, planPrompt, repoSnapshot, understandPrompt } from "../prompts.ts";
+import { pastLessons } from "../lessons.ts";
 import { CATEGORIES, WAIT, type Category, type Check, type Decision, type Risk, type Task } from "../types.ts";
 import { now, slug } from "../util.ts";
 import { stillBlocked } from "./agent.ts";
@@ -49,7 +50,11 @@ export const seniorNodes: NodeType[] = [
     params: [{ name: "maxTasks", type: "number", default: 8, description: "Upper bound on tasks per run." }],
     async run({ engine, s, params, log }) {
       const snap = repoSnapshot(s, path.join(engine.cfg.vault, "Code", s.project.name));
-      const { data, key } = await engine.senior<{ tasks: Partial<Task>[] }>(s, "plan", planPrompt(s, snap, engine.agents(), engine.cfg.terse));
+      const runs = engine.vault.runs().map((r) => {
+        const f = path.join(engine.vault.runDir(r.id), "report.md");
+        return { s: r, report: fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "" };
+      });
+      const { data, key } = await engine.senior<{ tasks: Partial<Task>[] }>(s, "plan", planPrompt(s, snap, engine.agents(), engine.cfg.terse, pastLessons(runs, s.project.name, s.id)));
       const raw = (data.tasks || []).slice(0, Number(params.maxTasks));
       if (!raw.length) throw new Error("senior returned no tasks");
       const ids = new Set<string>();
