@@ -216,9 +216,11 @@ export const agentNodes: NodeType[] = [
       // read-only agents must not change anything at all
       const marked = p.mode === "readonly" ? changed.map((c) => ({ ...c, inScope: false })) : changed;
       const checks: Evidence["checks"] = [];
-      // an edit agent that changed nothing fails without spending minutes on the test suite
-      const skip = p.mode === "edit" && diffLines === 0;
-      for (const c of skip ? [] : t.checks) {
+      // an edit agent that changed nothing fails without spending minutes on the test suite; one whose
+      // only changes are outside its allowed files has nothing the checks could prove either
+      const skipped =
+        p.mode !== "edit" ? undefined : diffLines === 0 ? "no changes" : changed.length > 0 && changed.every((c) => !c.inScope) ? "every change is outside ALLOWED FILES" : undefined;
+      for (const c of skipped ? [] : t.checks) {
         const r = await runCheck(t.worktree!, c.cmd);
         const value = c.measure ? lastNumber(r.out) : undefined;
         const baseline = t.baseline?.[c.name];
@@ -227,8 +229,10 @@ export const agentNodes: NodeType[] = [
         if (ok && c.measure && value === undefined) ok = false;
         checks.push({ name: c.name, cmd: c.cmd, ok, exitCode: r.code, value, baseline, tail: tail(r.out, 20) });
       }
-      a.evidence = { changed: marked, scopeOk: marked.every((c) => c.inScope), checks, checksOk: checks.every((c) => c.ok), diffLines, diffFile, ...(reverted ? { reverted } : {}) };
-      log(`evidence ${t.id} #${a.n}: ${marked.length} file(s), scope ${a.evidence.scopeOk ? "ok" : "VIOLATED"}, checks ${checks.filter((c) => c.ok).length}/${checks.length}`);
+      a.evidence = { changed: marked, scopeOk: marked.every((c) => c.inScope), checks, checksOk: checks.every((c) => c.ok), diffLines, diffFile, ...(reverted ? { reverted } : {}), ...(skipped ? { checksSkipped: skipped } : {}) };
+      log(
+        `evidence ${t.id} #${a.n}: ${marked.length} file(s), scope ${a.evidence.scopeOk ? "ok" : "VIOLATED"}, ${skipped ? `checks not run (${skipped})` : `checks ${checks.filter((c) => c.ok).length}/${checks.length}`}`,
+      );
       return "out";
     },
   },
