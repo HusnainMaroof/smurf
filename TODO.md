@@ -9,6 +9,11 @@ runs; engine `git()` ignores a leaked GIT_DIR/GIT_WORK_TREE; project notes in `v
 
 ## Next
 
+- [ ] When every change is out of scope the files are kept and checks run on them, so evidence shows
+      "checks 1/1" next to "scope VIOLATED" (clsx failure-path run, attempt 4). Mark such check passes
+      as not counting, or run checks after setting the stray files aside.
+- [ ] An attempt with no changes reports "checks 0/0": say "checks not run (no changes)".
+
 - [ ] Low-risk tasks get no independent review (only checks): decide if testing/coding tasks need one,
       or review a random sample. Found in the clsx end-to-end run (only the medium task was reviewed).
 - [ ] Agents still list other tasks' work as follow-ups despite OTHER TASKS in the prompt (clsx t2, t3).
