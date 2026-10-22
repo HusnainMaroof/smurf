@@ -17,7 +17,7 @@ works on that project. Nothing to `npm install`: Node 23.6+ runs the TypeScript 
 
 ```bash
 ./agents/orch setup                     # local config, Claude Code skills into .claude/skills, which agent CLIs you have
-./agents/orch setup --openhands --freebuff   # optional: OpenHands venv, node-pty for Freebuff (in ~/.orch)
+./agents/orch setup --openhands         # optional: OpenHands runtime (Python venv in ~/.orch)
 
 export ORCH_CONFIG=agents/config/free-only.json   # free models only
 ./agents/orch run "the sales API takes 2 seconds, make it fast"   # works on the project agents/ is in
@@ -99,7 +99,7 @@ edit `agents/engine/scripts/make_benchmarks.py`, run it, then run `bench --selft
 
 | Adapter | Covers | Notes |
 |---|---|---|
-| `cli` | Claude Code, Cline, OpenCode, Kilo, Codex, Command Code, Freebuff, any other agent CLI | Command templates in config (`{model}`, `{promptFile}`, `{cwd}`, `{root}`, `{timeoutSec}`, ...); the prompt goes on stdin. Agents run with git disabled. Parse modes: `text`, `claude-json`, `commandcode-json`, `out-file`. |
+| `cli` | Claude Code, Cline, OpenCode, Kilo, Codex, any other agent CLI | Command templates in config (`{model}`, `{promptFile}`, `{cwd}`, `{root}`, `{timeoutSec}`, ...); the prompt goes on stdin. Agents run with git disabled. Parse modes: `text`, `claude-json`, `commandcode-json`, `out-file`. |
 | `api` | OpenRouter, OpenAI, Ollama, LM Studio, any OpenAI-compatible API | Model discovery reads context length and price. API models edit through a file-block protocol limited to allowed files. Keys come from env vars. |
 | `openhands` | OpenCode, Kilo, Cline driven over ACP | OpenHands SDK is the agent runtime (conversation, events, stuck detection, usage), `LocalWorkspace`, no Docker. The CLI is the backend, with its own login and models, so no API key. Keys look like `openhands:opencode/opencode/glm-5.3-flash-free`. A model the backend rejects fails the run (`not_found`) instead of silently using the backend's default. |
 | `mock` | Tests and UI development | Scripted, no tokens. |
@@ -109,22 +109,10 @@ and `openhands-tools` (`./agents/orch setup --openhands`, runner `agents/engine/
 Add a backend under `providers.openhands.backends`: its ACP command, optional env prefix, and the
 ACP session mode for `readonly` and `edit`.
 
-### Freebuff
-
-Freebuff has no headless mode, so `agents/engine/scripts/freebuff_drive.cjs` drives its TUI through a ConPTY
-(`node-pty`, installed with `./agents/orch setup --freebuff`):
-
-- picks the model in `/model` and confirms it in the status bar (keys use the picker names,
-  `freebuff:Nemotron 3.5 Lightning`; `node agents/engine/scripts/freebuff_drive.cjs models` lists them);
-- types the prompt, answers question menus and "continue" pauses, prints new screen text as
-  `[screen]` lines for the engine's check-in;
-- finishes on a stable `.orch-report.md`, or on the answer footer with no more "Thinking";
-- never confirms paid hours unless `FREEBUFF_ALLOW_PAID=1`, and stops a session after
-  `FREEBUFF_MAX_HOURS` (default 1) of the daily hours counter.
-
-Only the UNLIMITED models (Nemotron 3.5 Lightning, Glyph Cluster) are in the routing list, so
-automatic runs never spend daily hours. Debug: `probe` (screen), `pick --model "<name>"`.
-Freebuff may use prompts for training unless that is turned off in its settings.
+Adding a provider: put a `cli` entry in `agents/config/orchestrator.json` with its run commands
+and models (`enabled: false` until a short `bench --models <key>` run passes). A tool without a
+headless mode can be wrapped in a small driver script that the run command calls; the provider's
+`_note` in the config says how each one is set up and what it costs.
 
 ## Token saving (Caveman style)
 
@@ -165,7 +153,7 @@ your-project/
 │   ├── engine/
 │   │   ├── src/             engine, nodes, router, models, adapters, workspace, ship, graph, lessons, vault, prompts
 │   │   ├── workflows/       workflow graphs (also loaded from vault/Workflows)
-│   │   ├── scripts/         setup, openhands_agent.py, freebuff_drive.cjs, benchmark and Graphify helpers
+│   │   ├── scripts/         setup, provider runners and drivers, benchmark and Graphify helpers
 │   │   └── benchmarks/      the router's benchmark tasks
 │   ├── skills/              Claude Code skills (installed by `orch setup`)
 │   ├── tasks/               task batches for run-tasks
