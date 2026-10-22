@@ -57,3 +57,10 @@ default: codemap -> understand -> plan -> approve (risky plans only) -> next
 ```
 
 Owner answers: `node src/cli.ts resume <run> --choice <option>`. Accepted work lands on `orch/<run>`; the owner merges it.
+
+## Reporting to the owner
+
+- Long work (agent runs, multi-step changes): give a status update about every 15 minutes, and at
+  every step that finishes: what is done, what is running, what is next, overall state.
+- Final reports: a numbered list of how each task was done (steps, model, checks, decisions),
+  then a table: task | model | result | checks | cost. Follow-ups and open questions last.

@@ -1,39 +1,20 @@
 # TODO (next session)
 
-State on 2026-10-21: only the orchestrator (`orchestrator/`) is left; the app and its folders are deleted.
-Start by loading the `orch-ship` skill (and `orchestrator`, `orch-fix` as needed). Commands below run
-in `orchestrator/`; add `ORCH_CONFIG=config/free-only.json` for runs.
+State on 2026-10-22: the orchestrator lives at the repo root (the old `orchestrator/` folder and
+`agents workflows/` are gone). Commands run from the repo root; add
+`ORCH_CONFIG=config/free-only.json` for runs. Fresh clone: `npm install && npm run setup`.
 
-## 1. Merge the read-only path test
+## Next
 
-Run `2026-10-21-read-only-path-check-research-review-div` (batch `tasks/demo-readonly-check.json`) finished:
-3/3 accepted in 2 min. Both read-only tasks (research, review) were accepted with no escalation, so
-the report-as-final-answer fix works on real models (one rate-limit reassign, not a bug).
-
-- [ ] Read the reports: `vault/Runs/<run>/explain-eq-a2-report.md`, `review-math-a1-report.md`.
-- [ ] Read the `add-div` diff (`git -C C:/Users/husna/smurf-demo diff main...orch/<run>`), then
-      `node src/cli.ts merge 2026-10-21-read-only-path-check-research-review-div`.
-
-## 2. Clean up
-
-- [ ] Run `2026-10-21-smurf-ui-batch-9-agent-terminals` shows "running" but was stopped when the
-      app was removed. There is no `orch abort` command yet (Engine.abort exists): add one, then
-      abort this run. Its branches and worktrees are already deleted.
-- [ ] `.env` in the repo root still holds the old server token; delete it (nothing uses it).
-
-## 3. Next improvements (ideas, in order of value)
-
-- [ ] `orch abort <run>` (see above).
-- [ ] Senior plans read-only work as `research` tasks, not `docs`: the plan prompt turned
-      "explain X (research only)" into a docs task in a real run.
-- [ ] Token use on the OpenHands path is cumulative per turn (about 600k per task); not a bug,
-      but `tokensIn` could store cache reads separately so the numbers are not misleading.
-- [ ] Run `node src/cli.ts bench --random 3 --per-task 2` now and then so the router learns the
-      newer free models (exploration only touches low-risk tasks).
-
-## Done today (for context)
-
-Parallel task lanes; free senior chain; prompts on stdin (Windows 32 KB limit); scope repair
-(stray files undone, work kept); BLOCKED filtering and downgrade when checks pass; workers see the
-run's other tasks; follow-ups in reports; `orch summary`, `orch merge`, `run-tasks --check`;
-role methods in `vault/Agents`; `AGENTS.md`; skills `orchestrator`, `orch-ship`, `orch-fix`.
+- [ ] Context from Graphify and the vault:
+  - `tasks` workflow builds the code map too (it has no `codemap` node today).
+  - Each worker gets its files' neighbours from `vault/Code/<project>/graph.json`.
+  - Senior gets lessons from the project's last runs (failures, review findings, open follow-ups).
+  - Fill `vault/Projects/orch.md` (stack, commands, what not to touch).
+- [ ] `orch summary` shows a task as "not started" while its agent is working (delegate running).
+- [ ] Senior chain: `src/util.ts` `git()` could drop `GIT_DIR`/`GIT_WORK_TREE` from the child env
+      (follow-up from a run: a leaked `isolateGit` env breaks git steps).
+- [ ] OpenHands `tokensIn` is cumulative per turn; store cache reads separately.
+- [ ] Command Code and Freebuff are in the config but disabled. Freebuff has no headless mode
+      (prompt argument rejected, stdin opens the TUI); Command Code is untested.
+- [ ] Run `node src/cli.ts bench --random 3 --per-task 2` now and then so the router learns new models.
