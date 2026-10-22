@@ -22,6 +22,7 @@ const HELP = `orch: a senior model managing a team of coding agents
   orch resume <run> [--choice C] [--note "..."]
                                          answer a waiting run (approve, reject, accept, retry,
                                          reassign, skip, abort, answer) and continue
+  orch abort <run>                       stop a run (a waiting run at once); its branches stay
   orch status [run]                      runs, or one run's tasks and what it waits for
   orch summary <run>                     one screen: tasks, evidence, question, diff stat, follow-ups, next step
   orch merge <run> [--no-test]           merge orch/<run> into the base branch; commits only if every
@@ -139,6 +140,11 @@ async function main() {
       printEvents(engine);
       const choice = flag("--choice");
       summary(await engine.resume(args[0], choice ? { choice, note: flag("--note") } : undefined));
+      break;
+    }
+    case "abort": {
+      if (!args[0]) throw new Error("usage: orch abort <run>");
+      console.log(`${args[0]}: ${engine.abort(args[0])}`);
       break;
     }
     case "status": {
