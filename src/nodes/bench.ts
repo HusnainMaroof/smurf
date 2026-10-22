@@ -29,6 +29,7 @@ export const benchNodes: NodeType[] = [
       if (a.failure) why.push(`tool failure ${a.failure}`);
       if (ev && !ev.scopeOk) why.push(readonly ? "changed files in a read-only task" : "out-of-scope changes");
       if (ev && !ev.checksOk) why.push(`failed: ${ev.checks.filter((c) => !c.ok).map((c) => c.name).join(", ")}`);
+      if (ev && ev.checksSkipped) why.push(`checks not run (${ev.checksSkipped})`);
       if (ev && !readonly && ev.diffLines === 0) why.push("no changes");
       if (misses.length) why.push(`report misses ${misses.join(" | ")}`);
       const ok = !why.length;
@@ -44,10 +45,11 @@ export const benchNodes: NodeType[] = [
         risk: t.risk,
         source: "benchmark",
         success: ok,
-        checksPassed: !!ev && ev.scopeOk && ev.checksOk,
+        checksPassed: !!ev && ev.scopeOk && ev.checksOk && !ev.checksSkipped,
         latencySec: Math.round(a.latencyMs / 1000),
         costUsd: +a.costUsd.toFixed(5),
         tokensIn: Math.round(a.tokensIn),
+        tokensCached: a.tokensCached === undefined ? undefined : Math.round(a.tokensCached),
         tokensOut: Math.round(a.tokensOut),
         retryIndex: 0,
         reviewScore: null,
