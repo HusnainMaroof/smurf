@@ -6,13 +6,13 @@ description: Ship a piece of work end to end through the orchestrator with free 
 # Ship work through the agents
 
 One routine instead of re-deriving the workflow each time. You are the senior: you write precise
-tasks and judge the result; free agents write the code. Commands run in `orchestrator/`; prefix
+tasks and judge the result; free agents write the code. Commands run from the repo root; prefix
 runs with `ORCH_CONFIG=config/free-only.json` (free models only).
 
 ## 1. Batch
 
 Read the code the work touches first (exact file names, function names, data shapes). Then write
-`orchestrator/tasks/<name>.json` from `batch-template.json` in this folder. Rules that decide
+`tasks/<name>.json` from `batch-template.json` in this folder. Rules that decide
 whether free agents succeed:
 
 - One task = one bounded change. Split by file so tasks run in parallel; give tasks that share a
@@ -33,7 +33,7 @@ ORCH_CONFIG=config/free-only.json node src/cli.ts run-tasks <project> tasks/<nam
 ```
 
 Start the run in the background and wait for the completion notice; do not poll. Commit the batch
-file (`git add orchestrator/tasks/<name>.json`) so the work is traceable.
+file (`git add tasks/<name>.json`) so the work is traceable.
 
 ## 3. When it stops
 

@@ -1,11 +1,11 @@
 # AGENTS.md: working on the orchestrator
 
-This repo is an AI dev-team orchestrator. The code lives in `orchestrator/`. A senior model plans
+This repo is an AI dev-team orchestrator. The code lives at the repo root. A senior model plans
 small tasks, the engine routes each task to a model, runs it in its own git worktree, verifies the
 result itself (checks, scope, metrics), gets an independent review, and accepts, retries,
 reassigns or escalates to the owner. Everything is recorded in an Obsidian vault.
 
-## Commands (run inside `orchestrator/`)
+## Commands (run from the repo root)
 
 | Command | What it does |
 |---|---|

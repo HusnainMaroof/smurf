@@ -1,11 +1,11 @@
 ---
 name: orchestrator
-description: Operate and improve this repo's AI dev-team orchestrator (orchestrator/). Use when running work through it (orch run / run-tasks / resume), writing task batches for the free agents, watching or debugging a run, reviewing and merging a run's integration branch, or changing the engine itself.
+description: Operate and improve this repo's AI dev-team orchestrator (repo root). Use when running work through it (orch run / run-tasks / resume), writing task batches for the free agents, watching or debugging a run, reviewing and merging a run's integration branch, or changing the engine itself.
 ---
 
 # Orchestrator playbook
 
-The orchestrator in `orchestrator/` is how work gets done here: you act as the senior, write
+The orchestrator at the repo root is how work gets done here: you act as the senior, write
 precise tasks, and free agents do them. Read `AGENTS.md` at the repo root for the code layout and
 conventions before changing the engine.
 
@@ -13,7 +13,7 @@ Two focused skills cover the repeated routines: `orch-ship` (batch -> check -> r
 review -> merge) and `orch-fix` (real run problem -> engine fix + test). Use them instead of
 re-deriving the steps.
 
-All commands run inside `orchestrator/`. Prefix with `ORCH_CONFIG=config/free-only.json` to use
+All commands run from the repo root. Prefix with `ORCH_CONFIG=config/free-only.json` to use
 free models only (the owner's default; no paid Claude/Codex/OpenAI usage).
 
 ## 1. Choose how to run work
