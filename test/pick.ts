@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { classify } from "../src/adapters/common.ts";
 import { pickReady, ownFollowUps } from "../src/nodes/flow.ts";
 import type { RunState, Task } from "../src/types.ts";
 import { git, shell } from "../src/util.ts";
@@ -49,5 +50,10 @@ delete process.env.GIT_DIR;
 fs.rmSync(tmp2, { recursive: true, force: true });
 
 assert.deepEqual(ownFollowUps(["owned by task t4", "`t4` sets the script", "t40 is fine", "add a cache"], ["t4"]), ["t40 is fine", "add a cache"]);
+
+// failure classes from real 2026-10-22 runs: a retired free model, and cline over ACP hiding that error
+assert.equal(classify('404: The free launch period for MiniMax M3.1 Flash ended on Oct 22, 2026. The `:free` variant has been retired', 0, false, 7_000, false), "not_found");
+assert.equal(classify('error: no response from ACP server (the backend may not serve this model)', 1, false, 6_000, false), "no_response");
+assert.equal(classify('', 1, false, 6_000, false), "crash", "an empty quick exit without the marker stays a crash");
 
 console.log("pick PASS");

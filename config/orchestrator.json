@@ -93,6 +93,7 @@
       "rate_limit": 30,
       "auth": 1440,
       "not_found": 10080,
+      "no_response": 120,
       "crash": 15,
       "timeout": 30,
       "bad_output": 10,

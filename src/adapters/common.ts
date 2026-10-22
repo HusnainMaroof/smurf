@@ -9,7 +9,7 @@ export const REPORT_NAME = ".orch-report.md";
 export const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").replace(/\r/g, "");
 
 /** Failures caused by the provider, not the model's skill: they cool the model down but never count against its quality. */
-export const INFRA_FAILURES = ["rate_limit", "auth", "not_found"];
+export const INFRA_FAILURES = ["rate_limit", "auth", "not_found", "no_response"];
 
 /** A CLI that exits 0 but whose whole "answer" is an error line did not answer. */
 export const isErrorOnly = (text: string) => {
@@ -24,7 +24,10 @@ export function classify(out: string, code: number | null, timedOut: boolean, ms
   const t = stripAnsi(out).slice(-4000);
   if (/rate.?limit|\b429\b|quota exceeded|too many requests|insufficient.?credits/i.test(t)) return "rate_limit";
   if (/re-?authenticat|unauthori[sz]ed|\b401\b|\b403\b|invalid api key|not logged in|login required/i.test(t)) return "auth";
-  if (/model not found|unknown model|no such model|model .{0,60} (is not|not) (available|supported)|invalid model|not found for account|no endpoints found/i.test(t)) return "not_found";
+  if (/model not found|unknown model|no such model|model .{0,60} (is not|not) (available|supported)|invalid model|not found for account|no endpoints found|variant has been retired|model has been (retired|removed|deprecated)/i.test(t)) return "not_found";
+  // an ACP backend (cline over ACP) that hides the provider error answers nothing at once: the model is
+  // likely unavailable, which is the provider's problem, not a sign of the model's skill
+  if (/no response from ACP server/i.test(t)) return "no_response";
   // the shell could not even start the tool (e.g. a prompt over Windows' 32 KB command-line limit)
   if (/argument list too long/i.test(t)) return "crash";
   if (!hasAnswer && ms < 120_000) return "crash";

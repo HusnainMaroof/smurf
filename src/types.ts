@@ -6,7 +6,7 @@ export type Tier = "light" | "standard" | "strong" | "premium";
 export const TIERS: Tier[] = ["light", "standard", "strong", "premium"];
 export const CATEGORIES = ["coding", "debugging", "testing", "research", "review", "architecture", "docs"] as const;
 export type Category = (typeof CATEGORIES)[number];
-export type Failure = "rate_limit" | "auth" | "not_found" | "crash" | "timeout" | "stalled" | "bad_output";
+export type Failure = "rate_limit" | "auth" | "not_found" | "no_response" | "crash" | "timeout" | "stalled" | "bad_output";
 export type Terse = "off" | "lite" | "full" | "ultra";
 
 export interface ModelInfo {

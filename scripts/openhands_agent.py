@@ -96,6 +96,9 @@ def run(a):
         cost = m.accumulated_cost or 0
         conv.close()
     if text.strip() == "(No response from ACP server)":
+        # some backends (cline) swallow the provider error, e.g. a retired model's 404; say so plainly
+        # so the engine classifies it as the provider's fault, not as a crash of the model
+        print("error: no response from ACP server (the backend may not serve this model)", flush=True)
         text = ""
     return text, cost, usage
 
