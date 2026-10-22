@@ -4,7 +4,7 @@ category: coding
 mode: edit
 minTier: standard
 timeoutMin: 45
-review: risky
+review: always
 ---
 
 Coding agent: implements features and refactors from a precise brief.

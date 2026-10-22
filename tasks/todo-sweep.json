@@ -1,0 +1,77 @@
+[
+  {
+    "id": "evidence-skip",
+    "title": "Evidence: checks not run when nothing in scope changed",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 35,
+    "files": ["src/nodes/agent.ts", "src/types.ts", "test/verify.ts", "package.json"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "verify", "cmd": "node test/verify.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (imports end in .ts, erasable syntax only, no packages). Read the verify.evidence node in src/nodes/agent.ts (scope repair: `stray`, `if (stray.length && stray.length < changed.length)`, `const skip = p.mode === \"edit\" && diffLines === 0`, the evidence log line), `interface Evidence` in src/types.ts, and test/guards.ts + src/adapters/mock.ts (mock script: edits, stray, say, review).\nReal-run problem: when EVERY change is outside ALLOWED FILES the stray files stay and the checks run on them, so the log says `scope VIOLATED, checks 1/1` and the pass looks like evidence. With no changes it says `checks 0/0`.\n1. src/types.ts Evidence: add `/** Why the checks were not run (no changes, or only out-of-scope changes). */ checksSkipped?: string;`.\n2. agent.ts verify: skip the checks for an edit agent when diffLines === 0 (reason \"no changes\") or when every changed file is out of scope (reason \"every change is outside ALLOWED FILES\"); store the reason as evidence.checksSkipped. The log line then reads `checks not run (<reason>)` instead of `checks x/y`. Keep everything else (checksOk stays checks.every(...); decisions are unchanged: scope VIOLATED still blocks accept).\n3. Create test/verify.ts by copying the setup pattern of test/guards.ts (temp repo with a.js and check.js, mock models senior + coder, loadConfig override, Agents copied, engine.start): the mock coder has NO edits and one stray file notes.txt. Assert the task is not accepted, its last attempt has evidence.checks.length === 0 and evidence.checksSkipped matching /outside ALLOWED FILES/. Print `verify PASS`.\n4. package.json: append ` && node test/verify.ts` to the test script.\nChange nothing else."
+  },
+  {
+    "id": "followups-own",
+    "title": "Report: drop follow-ups that are another task's work",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 25,
+    "files": ["src/nodes/flow.ts", "test/pick.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "pick", "cmd": "node test/pick.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read `followUps` and the report.final node in src/nodes/flow.ts (it builds `notes` from followUps(report) per task). Real run: agents listed other tasks' work as their follow-ups (\"bin/test.js is owned by task t4\", \"t5 should document ...\").\n1. In flow.ts add `export function ownFollowUps(items: string[], otherIds: string[]): string[]` that drops items mentioning any other task id as a whole word (also inside backticks), e.g. id t4 matches \"task t4\", \"`t4`\", \"t4's\" but not \"t40\" or \"st4\". Escape ids for the regex.\n2. In report.final use it for the agent notes only: `ownFollowUps(followUps(report), s.tasks.filter((x) => x.id !== t.id).map((x) => x.id))` (review findings, reverted and left-undone lines unchanged).\n3. test/pick.ts (before `pick PASS`): assert ownFollowUps([\"owned by task t4\", \"`t4` sets the script\", \"t40 is fine\", \"add a cache\"], [\"t4\"]) deepEquals [\"t40 is fine\", \"add a cache\"]. Import it from ../src/nodes/flow.ts.\nChange nothing else."
+  },
+  {
+    "id": "question-options",
+    "title": "Senior question options become resume choices",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["src/nodes/senior.ts", "test/guards.ts"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "guards", "cmd": "node test/guards.ts" },
+      { "name": "tests", "cmd": "npm test" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read the senior.understand node in src/nodes/senior.ts (it sets `s.waiting = { kind: \"question\", question, options: [\"answer\"] }`; on resume it appends `Owner answers: ${s.input.note || s.input.choice}` to s.request) and `arr`/`asText` at the end of the file (asText renders options as `Options: (1) a (2) b`). engine.resume only accepts a choice listed in waiting.options. Models often return questions as objects: {question, whyBlocking, options: string[]}.\n1. Add `export function questionChoices(raw: unknown): string[]`: if raw is an array whose FIRST element is an object with a non-empty `options` array, return [\"1\", \"2\", ...] (one per option); else [].\n2. In understand: options become `[\"answer\", ...questionChoices(data.questions)]`. On resume, when the choice is one of those numbers, the answer text is that option's text, parsed back from s.waiting.question (the `(N) text` part, up to ` (N+1) ` or the end of that line), followed by ` (note: <note>)` when a note is given. For the choice \"answer\" keep today's behaviour.\n3. test/guards.ts, next to the existing arr() assertions: questionChoices([{question: \"q\", options: [\"a\", \"b\"]}]) deepEquals [\"1\", \"2\"]; questionChoices([\"plain\"]) and questionChoices(undefined) deepEqual [].\nChange nothing else (src/types.ts is not in your files)."
+  },
+  {
+    "id": "summary-running",
+    "title": "orch summary: show working tasks and skipped checks",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["src/ship.ts"],
+    "deps": ["evidence-skip"],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "wired", "cmd": "grep -q 'checksSkipped' src/ship.ts && grep -q 'working' src/ship.ts" }
+    ],
+    "brief": "TypeScript run directly by Node 24. Read runSummary in src/ship.ts. Evidence (src/types.ts) now has `checksSkipped?: string`.\n1. A task with status \"running\" and no attempt yet shows `working (attempt 1)` instead of \"not started\"; a running task whose last attempt has no decision yet shows `<model> working (attempt N)`.\n2. In the checks text: when ev.checksSkipped is set, show `checks not run (<reason>)` instead of \"no checks\".\nChange nothing else."
+  },
+  {
+    "id": "openhands-tokens",
+    "title": "OpenHands: input tokens without cache reads; cache reads stored apart",
+    "category": "coding",
+    "risk": "medium",
+    "timeoutMin": 35,
+    "files": ["scripts/openhands_agent.py", "src/adapters/cli.ts", "src/types.ts", "src/vault.ts", "src/nodes/agent.ts"],
+    "deps": ["evidence-skip"],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "py", "cmd": "grep -q 'cache_read' scripts/openhands_agent.py && grep -q 'tokensCached' src/adapters/cli.ts" }
+    ],
+    "brief": "TypeScript (Node 24, imports end in .ts) and one Python file. OpenHands runs report ~600k input tokens per task: scripts/openhands_agent.py (lines ~90-95) sets `input_tokens = u.prompt_tokens` and `cache_read_input_tokens = u.cache_read_tokens`; prompt_tokens already INCLUDES cache reads (LiteLLM convention), and src/adapters/cli.ts (parse \"claude-json\", ~line 111) adds input + cache_read + cache_creation, so cache reads are counted twice.\n1. openhands_agent.py: input_tokens = max(0, prompt_tokens - cache_read_tokens).\n2. src/types.ts: add optional `tokensCached?: number` to RunResult and to Attempt (next to tokensIn). src/vault.ts: add optional `tokensCached?: number` to Execution, and in the attempt note line that prints `tokens ${a.tokensIn}/${a.tokensOut}` append ` (+N cached)` when tokensCached > 0.\n3. cli.ts claude-json: tokensIn = input_tokens + cache_creation_input_tokens; tokensCached = cache_read_input_tokens; return tokensCached in the RunResult.\n4. src/nodes/agent.ts: where attempts and executions record tokensIn (~lines 180 and 270), also record tokensCached (rounded) when present.\nChange nothing else; other adapters may leave tokensCached undefined."
+  }
+]

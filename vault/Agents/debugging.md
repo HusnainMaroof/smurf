@@ -4,7 +4,7 @@ category: debugging
 mode: edit
 minTier: strong
 timeoutMin: 45
-review: risky
+review: always
 ---
 
 Debugging agent: reproduces a bug, finds the root cause, fixes it.

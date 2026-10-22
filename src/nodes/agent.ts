@@ -236,7 +236,7 @@ export const agentNodes: NodeType[] = [
     type: "agent.review",
     label: "Independent review",
     group: "verify",
-    description: "A different model reviews the diff against the task and the evidence (correctness, regressions, security, scope, simplicity). Runs when the agent profile asks for it, for risky tasks, or for big diffs.",
+    description: "A different model reviews the diff against the task and the evidence (correctness, regressions, security, scope, simplicity). Runs when the agent profile asks for it (coding, testing, debugging: always), for risky tasks, or for big diffs.",
     ports: ["out"],
     params: [{ name: "minDiffLines", type: "number", default: 150, description: "Diffs this big are always reviewed." }],
     async run(ctx) {

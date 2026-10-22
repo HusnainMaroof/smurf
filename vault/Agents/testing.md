@@ -4,7 +4,7 @@ category: testing
 mode: edit
 minTier: standard
 timeoutMin: 30
-review: risky
+review: always
 ---
 
 Testing agent: writes and runs unit/integration tests, reproduces bugs as tests.
