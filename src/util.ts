@@ -50,7 +50,9 @@ export function shell(
 ): Promise<ShellResult> {
   return new Promise((resolve) => {
     const started = Date.now();
-    const env = { ...process.env, ...opts.env };
+    const env = { ...process.env };
+    for (const k of Object.keys(env)) if (GIT_ENV_LEAKS.includes(k.toUpperCase())) delete env[k];
+    Object.assign(env, opts.env);
     // nested Claude Code sessions refuse to start while this is set
     delete env.CLAUDECODE;
     const child = spawn(BASH, ["-c", script], { cwd: opts.cwd, env, stdio: ["pipe", "pipe", "pipe"] });
