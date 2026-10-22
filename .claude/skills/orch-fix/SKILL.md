@@ -9,7 +9,7 @@ The best bugs come from real runs. Work from evidence, fix the engine, and lock 
 
 ## 1. Find what really happened
 
-In `orchestrator/vault/Runs/<run>/`:
+In `vault/Runs/<run>/`:
 
 ```bash
 grep -o '"msg":"[^"]*' events.jsonl | cut -c8-300          # the timeline
@@ -40,7 +40,7 @@ before you fix it.
 ## 3. Fix and verify
 
 Smallest change in the engine that handles the case; keep agents' real blockers and failures
-working. Then in `orchestrator/`:
+working. Then at the repo root:
 
 ```bash
 npx tsc --noEmit && npm test
