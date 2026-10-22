@@ -232,6 +232,11 @@ async function main() {
         break;
       }
       const list = (f: string) => flag(f)?.split(",").map((s) => s.trim()).filter(Boolean);
+      // only the check-ins: node logs of parallel jobs would drown the bench output
+      engine.on("event", (e) => {
+        if (e.type === "watch")
+          console.log(`${new Date().toTimeString().slice(0, 8)}  check-in ${e.agent} (${e.model}): ${e.minutes} min, ${e.newLines} new lines, ${e.repeated} repeated -> ${e.verdict}`);
+      });
       const rows = await runBenchmarks(
         engine,
         {
