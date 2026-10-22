@@ -53,7 +53,7 @@ export function understandPrompt(s: RunState, snapshot: string, terse: Terse) {
   ].filter(Boolean).join("\n\n");
 }
 
-export function planPrompt(s: RunState, snapshot: string, agents: Record<string, AgentProfile>, terse: Terse) {
+export function planPrompt(s: RunState, snapshot: string, agents: Record<string, AgentProfile>, terse: Terse, lessons: string[] = []) {
   const roster = Object.values(agents).map((a) => `- ${a.category} (${a.mode}): ${a.body.split("\n").find((l) => l.trim()) ?? ""}`).join("\n");
   return [
     "ORCH:senior.plan",
@@ -77,6 +77,10 @@ export function planPrompt(s: RunState, snapshot: string, agents: Record<string,
       "- brief: what to do, where, the root cause if known, and what done looks like. Precise briefs are the biggest lever on agent quality.",
     ].join("\n"),
     snapshot,
+    lessons.length
+      ? `LESSONS FROM RECENT RUNS OF THIS PROJECT (failures, retries, open follow-ups; plan around them, and turn a follow-up into a task only if the request needs it):
+${lessons.map((l) => `- ${l}`).join("\n")}`
+      : "",
     JSON_ONLY,
     '{"tasks":[{"id":"t1","title":"","category":"coding","risk":"low","brief":"","files":["src/x.ts"],"deps":[],"checks":[{"name":"tests","cmd":"npm test"}]}]}',
   ].filter(Boolean).join("\n\n");

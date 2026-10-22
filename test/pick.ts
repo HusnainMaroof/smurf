@@ -1,7 +1,11 @@
 // pickReady: dependency handling without running anything.
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { pickReady } from "../src/nodes/flow.ts";
 import type { RunState, Task } from "../src/types.ts";
+import { git } from "../src/util.ts";
 
 const task = (id: string, deps: string[] = [], status: Task["status"] = "pending"): Task => ({
   id, title: id, category: "coding", risk: "low", brief: "", files: [], deps, checks: [], status, attempts: [], excluded: [], reassigns: 0,
@@ -24,5 +28,13 @@ assert.ok(logs.some((l) => l.includes("can never be accepted")));
 s = run([task("e", [], "running"), task("f", ["e"])]);
 assert.equal(pickReady(s, () => true, log), undefined);
 assert.equal(s.tasks[1].status, "pending");
+
+// a GIT_DIR leaked from an agent shell must not break the engine's git
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-git-env-"));
+git(tmp, "init", "-q");
+process.env.GIT_DIR = "/nonexistent";
+assert.equal(git(tmp, "rev-parse", "--git-dir").ok, true, "git ignores a leaked GIT_DIR");
+delete process.env.GIT_DIR;
+fs.rmSync(tmp, { recursive: true, force: true });
 
 console.log("pick PASS");
