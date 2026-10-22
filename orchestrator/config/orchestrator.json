@@ -235,6 +235,28 @@
       ],
       "streamsOutput": false
     },
+    "commandcode": {
+      "kind": "cli",
+      "enabled": false,
+      "_note": "Command Code CLI (installed: commandcode). Not configured yet: set the run commands, parse mode and models before enabling.",
+      "command": "commandcode",
+      "billing": "subscription",
+      "isolateGit": true,
+      "parse": "text",
+      "run": {},
+      "models": []
+    },
+    "freebuff": {
+      "kind": "cli",
+      "enabled": false,
+      "_note": "Freebuff CLI (installed: freebuff, free, ad-funded). Not configured yet: set the run commands, parse mode and models before enabling.",
+      "command": "freebuff",
+      "billing": "free",
+      "isolateGit": true,
+      "parse": "text",
+      "run": {},
+      "models": []
+    },
     "openrouter": {
       "kind": "api",
       "enabled": false,
