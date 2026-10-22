@@ -25,8 +25,13 @@ export function writeText(file: string, text: string) {
   fs.writeFileSync(file, text);
 }
 
+// git reads GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE from the env, so a leak from an agent shell would send the engine's git to another repo than cwd
+const GIT_ENV_LEAKS = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"];
+
 export const git = (cwd: string, ...args: string[]) => {
-  const r = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 1 << 28 });
+  const env = { ...process.env };
+  for (const k of Object.keys(env)) if (GIT_ENV_LEAKS.includes(k.toUpperCase())) delete env[k];
+  const r = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 1 << 28, env });
   return { ok: r.status === 0, out: (r.stdout || "").trim(), err: (r.stderr || "").trim() };
 };
 
