@@ -14,7 +14,7 @@
     "orch": "node src/cli.ts",
     "setup": "node scripts/setup.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node test/e2e.ts && node test/parallel.ts && node test/pick.ts && node test/guards.ts && node test/setup.ts",
+    "test": "node test/e2e.ts && node test/parallel.ts && node test/pick.ts && node test/guards.ts && node test/setup.ts && node test/graph.ts",
     "server": "node src/cli.ts server",
     "runner": "node src/cli.ts runner"
   },
