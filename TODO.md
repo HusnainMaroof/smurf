@@ -7,21 +7,17 @@ Done on 2026-10-22: `orch abort`; research-not-docs plan rule; flatten + `npm ru
 for `tasks` runs; RELATED FILES for workers; LESSONS for the senior; git env leak fixed in `git()` and
 `shell()`; senior questions as text with numbered resume choices; checks not run when nothing in
 scope changed (`checksSkipped`); follow-ups about other tasks dropped; summary shows working tasks;
-OpenHands cache reads stored apart (`tokensCached`); coding/testing/debugging always reviewed.
+OpenHands cache reads stored apart (`tokensCached`, everywhere); coding/testing/debugging always
+reviewed; retired models -> not_found, empty ACP reply -> no_response; Command Code parse mode.
 End-to-end tests on a cloned repo (`~/orch-e2e/clsx`): happy path and failure paths both pass.
 
 ## Next
 
-- [ ] OpenHands -> cline (ACP) route is broken: cline over ACP finds no credential ("no supported
-      credential source is available"), returns empty in ~6 s, benchmark FAIL "crash" for every model
-      (bench 2026-10-22-14-03). Plain `cline:` works. Fix the ACP login or disable the cline backend.
-
-- [ ] Undo of out-of-scope edits next to good work was never triggered by a real model (agents
-      stayed in scope); only the mock test covers it.
-- [ ] Command Code: configured but disabled (no credits). Its `--output-format json` is an NDJSON
-      event stream (`{"type":"result",...,"finalText"}`) and it exits 0 on errors: add a parse mode
-      before enabling. Freebuff: no headless mode.
-- [ ] `kilo:kilo/minimax/minimax-m3.1-flash:free` returned `not_found` twice on 2026-10-22: check
-      whether the model is gone (`orch models --refresh`).
-- [ ] Bench, senior and bench nodes do not record `tokensCached` yet (only delegate and review do).
-- [ ] Run `node src/cli.ts bench --random 3 --per-task 2` now and then so the router learns new models.
+- [ ] Freebuff as a hand-run agent: a "manual" provider kind. The engine prepares the worktree and
+      prompt file, the run waits ("open Freebuff in <worktree>, paste prompt.txt, then resume"), and
+      on resume the work is verified, reviewed and routed like any agent. Freebuff has no headless
+      mode (0.2.34: prompt argument rejected, stdin opens the TUI); ask them for .
+- [ ] Command Code: parse mode done; needs credits, then a small bench run before .
+- [ ] Undo of out-of-scope edits next to good work: only the mock test covers it (real agents stayed
+      in scope in every run so far).
+- [ ] Benchmarks are thin (1-2 runs per model): run       now and then.
