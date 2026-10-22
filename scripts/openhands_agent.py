@@ -89,7 +89,7 @@ def run(a):
         m = conv.conversation_stats.get_combined_metrics()
         u = m.accumulated_token_usage
         usage = {
-            "input_tokens": u.prompt_tokens if u else 0,
+            "input_tokens": max(0, (u.prompt_tokens if u else 0) - (u.cache_read_tokens if u else 0)),
             "cache_read_input_tokens": u.cache_read_tokens if u else 0,
             "output_tokens": u.completion_tokens if u else 0,
         }

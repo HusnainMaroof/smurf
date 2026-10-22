@@ -96,6 +96,7 @@ export class CliAdapter implements Adapter {
 
     let text = "";
     let tokensIn = 0;
+    let tokensCached = 0;
     let tokensOut = 0;
     let costUsd = 0;
     let isError = false;
@@ -108,7 +109,8 @@ export class CliAdapter implements Adapter {
           isError = !!o.is_error;
           costUsd = Number(o.total_cost_usd || 0);
           const u = o.usage || {};
-          tokensIn = Number(u.input_tokens || 0) + Number(u.cache_read_input_tokens || 0) + Number(u.cache_creation_input_tokens || 0);
+          tokensIn = Number(u.input_tokens || 0) + Number(u.cache_creation_input_tokens || 0);
+          tokensCached = Number(u.cache_read_input_tokens || 0);
           tokensOut = Number(u.output_tokens || 0);
         } catch {
           /* fall through to report file */
@@ -132,6 +134,6 @@ export class CliAdapter implements Adapter {
     }
     const hasAnswer = text.trim().length > 20 && !isError && !isErrorOnly(text);
     const failure = r.stalled && !hasAnswer ? "stalled" : classify(r.out, isError ? 1 : r.code, r.timedOut, r.ms, hasAnswer);
-    return { ok: !failure, text, exitCode: r.code, latencyMs: r.ms, tokensIn, tokensOut, costUsd, failure };
+    return { ok: !failure, text, exitCode: r.code, latencyMs: r.ms, tokensIn, tokensCached, tokensOut, costUsd, failure };
   }
 }
