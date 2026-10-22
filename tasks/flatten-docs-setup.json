@@ -1,0 +1,31 @@
+[
+  {
+    "id": "docs-root-paths",
+    "title": "Docs and skills: the orchestrator now lives at the repo root",
+    "category": "docs",
+    "risk": "low",
+    "timeoutMin": 20,
+    "files": ["AGENTS.md", ".claude/skills/orchestrator/SKILL.md", ".claude/skills/orch-ship/SKILL.md", ".claude/skills/orch-fix/SKILL.md"],
+    "deps": [],
+    "checks": [
+      { "name": "no-old-paths", "cmd": "! grep -rn 'orchestrator/' AGENTS.md .claude/skills" },
+      { "name": "still-there", "cmd": "grep -q 'npx tsc --noEmit' AGENTS.md && grep -q 'ORCH_CONFIG=config/free-only.json' .claude/skills/orch-ship/SKILL.md" }
+    ],
+    "brief": "Markdown only. The folder orchestrator/ was moved to the repo root: src/, config/, test/, tasks/, vault/, package.json now sit at the top and every command runs from the repo root. Edit only the four files listed.\n1. AGENTS.md: line 3 says the code lives in `orchestrator/`: say it lives at the repo root. The heading `## Commands (run inside orchestrator/)` becomes `## Commands (run from the repo root)`.\n2. In the three SKILL.md files replace every `orchestrator/tasks/`, `orchestrator/vault/` with `tasks/`, `vault/`; replace \"Commands run in `orchestrator/`\", \"All commands run inside `orchestrator/`\", \"Then in `orchestrator/`:\" and \"The orchestrator in `orchestrator/`\" with wording that says the repo root; in the orchestrator skill's description change \"(orchestrator/)\" to \"(repo root)\".\nDo not change anything else: keep commands, tables and the frontmatter name lines exactly as they are."
+  },
+  {
+    "id": "setup-script",
+    "title": "Add `npm run setup` for a fresh clone",
+    "category": "coding",
+    "risk": "low",
+    "timeoutMin": 30,
+    "files": ["scripts/setup.ts", "test/setup.ts", "package.json"],
+    "deps": [],
+    "checks": [
+      { "name": "types", "cmd": "npx tsc --noEmit" },
+      { "name": "tests", "cmd": "npm test" },
+      { "name": "runs", "cmd": "npm run setup" }
+    ],
+    "brief": "TypeScript run directly by Node 24 (no build; imports end in .ts; only erasable syntax; no new packages). Repo root is the orchestrator. Read src/util.ts (ROOT, commandExists(name): boolean, shell, writeJson), src/config.ts (loadConfig, Config, ProviderConfig: providers keyed by name with kind, enabled, command) and test/pick.ts for the test style (node:assert/strict, prints `<name> PASS`).\n1. Create scripts/setup.ts exporting:\n - `writeLocal(root: string): boolean`: if `<root>/config/local.json` does not exist, write `{ \"_about\": \"This machine's overrides of config/orchestrator.json (same shape, merged on top, git-ignored).\" }` with writeJson and return true; if it exists, never touch it and return false.\n - `toolReport(providers: Record<string, { kind: string; enabled?: boolean; command?: string }>): string[]`: one line per provider with kind \"cli\" and enabled true: `ok      <name> (<command>)` when commandExists(command), else `missing <name> (<command>): install it or set enabled false in config/local.json`.\n - When run directly (compare import.meta.url with pathToFileURL(process.argv[1]).href): print whether local.json was created, print toolReport(loadConfig().providers), and only with the flag `--openhands`: if `uv` exists run `uv venv --python 3.12 \"$HOME/.orch/openhands-venv\" && uv pip install --python \"$HOME/.orch/openhands-venv\" openhands-sdk openhands-tools` through shell() and print its tail, else print that uv is needed (https://docs.astral.sh/uv/). Exit 0 even when tools are missing.\n2. Create test/setup.ts: in a temp dir with a config/ folder, writeLocal returns true then false and a second call keeps a file you changed in between; toolReport({ a: {kind:\"cli\",enabled:true,command:\"node\"}, b: {kind:\"cli\",enabled:true,command:\"no-such-tool-xyz\"}, c: {kind:\"cli\",enabled:false,command:\"node\"}, d: {kind:\"api\",enabled:true} }) gives exactly 2 lines, the first starting \"ok\", the second \"missing\". Print `setup PASS`.\n3. package.json: add script \"setup\": \"node scripts/setup.ts\" and append ` && node test/setup.ts` to the \"test\" script.\nDo not change any other file."
+  }
+]
