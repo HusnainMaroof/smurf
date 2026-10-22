@@ -1,8 +1,16 @@
 {
   "name": "tasks",
   "description": "Preset tasks (no senior planning): each task is routed, delegated, verified with evidence, reviewed, decided and integrated. Used when the owner or another tool already wrote the tasks.",
-  "start": "next",
+  "start": "codemap",
   "nodes": [
+    {
+      "id": "codemap",
+      "type": "context.codemap",
+      "position": [
+        750,
+        0
+      ]
+    },
     {
       "id": "next",
       "type": "tasks.next",
@@ -93,6 +101,10 @@
     }
   ],
   "edges": [
+    {
+      "from": "codemap",
+      "to": "next"
+    },
     {
       "from": "next",
       "port": "task",
