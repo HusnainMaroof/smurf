@@ -1,7 +1,7 @@
 // pastLessons: what went wrong in a project's recent runs.
 import assert from "node:assert/strict";
-import { pastLessons } from "../engine/src/lessons.ts";
-import type { RunState, Task } from "../engine/src/types.ts";
+import { pastLessons } from "../src/lessons.ts";
+import type { RunState, Task } from "../src/types.ts";
 
 const task = (id: string, status: Task["status"], attempts: number, critique?: string): Task => ({
   id, title: `T ${id}`, category: "coding", risk: "low", brief: "", files: [], deps: [], checks: [], status,

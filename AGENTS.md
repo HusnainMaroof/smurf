@@ -6,16 +6,16 @@ small tasks, the engine routes each task to a model, runs it in its own git work
 result itself (checks, scope, metrics), gets an independent review, and accepts, retries,
 reassigns or escalates to the owner. Everything is recorded in an Obsidian vault.
 
-## Commands (`./agents/orch` from the repo root; dev commands inside `agents/`)
+## Commands (`./agents/orch` from the repo root; dev commands inside `agents/engine/`)
 
 | Command | What it does |
 |---|---|
-| `cd agents && npx tsc --noEmit` | Type-check (there is no build step: Node runs the .ts files directly) |
-| `cd agents && npm test` | All tests with the mock provider, no tokens: `agents/tests/e2e.ts`, `parallel.ts`, `pick.ts`, `guards.ts` |
-| `cd agents && node tests/<name>.ts` | One test file |
+| `cd agents/engine && npx tsc --noEmit` | Type-check (there is no build step: Node runs the .ts files directly) |
+| `cd agents/engine && npm test` | All tests with the mock provider, no tokens: `agents/engine/tests/e2e.ts`, `parallel.ts`, `pick.ts`, `guards.ts` |
+| `cd agents/engine && node tests/<name>.ts` | One test file |
 | `./agents/orch` | CLI help |
 
-Always run both `npx tsc --noEmit` and `npm test` (in `agents/`) before you say a change is done.
+Always run both `npx tsc --noEmit` and `npm test` (in `agents/engine/`) before you say a change is done.
 
 ## Layout
 
@@ -46,7 +46,7 @@ Always run both `npx tsc --noEmit` and `npm test` (in `agents/`) before you say 
 - LF line endings (`.gitattributes`). The owner works on Windows with Git Bash; shell commands must work there.
 - Comments explain why, not what. Match the surrounding code: short names, small functions, no new abstractions for one use.
 - Never trust an agent's claim: the engine decides from evidence (`verify.evidence`), so new logic should be checkable the same way.
-- Every behaviour change gets a mock-provider test (see `agents/tests/guards.ts` for the pattern: temp repo, script file in `ORCH_MOCK_SCRIPT`, `loadConfig` override, `engine.start`).
+- Every behaviour change gets a mock-provider test (see `agents/engine/tests/guards.ts` for the pattern: temp repo, script file in `ORCH_MOCK_SCRIPT`, `loadConfig` override, `engine.start`).
 - Never put secrets in the vault or in prompts. Never push; the owner pushes.
 
 ## How a run flows

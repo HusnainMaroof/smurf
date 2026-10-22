@@ -5,10 +5,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadConfig } from "../engine/src/config.ts";
-import { Engine } from "../engine/src/engine.ts";
-import { filesOverlap } from "../engine/src/nodes/flow.ts";
-import { git, writeJson } from "../engine/src/util.ts";
+import { loadConfig } from "../src/config.ts";
+import { Engine } from "../src/engine.ts";
+import { filesOverlap } from "../src/nodes/flow.ts";
+import { git, writeJson } from "../src/util.ts";
 
 assert.ok(filesOverlap(["src/a.ts"], ["src/a.ts"]));
 assert.ok(filesOverlap(["src/"], ["src/a.ts"]));

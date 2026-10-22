@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileNeighbours } from "../engine/src/graph.ts";
+import { fileNeighbours } from "../src/graph.ts";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-graph-"));
 const graphFile = path.join(tmp, "graph.json");

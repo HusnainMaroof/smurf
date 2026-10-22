@@ -33,7 +33,7 @@ is what retry, reassign and review are for).
 
 ## 2. Reproduce it with the mock provider
 
-Add the case to a test (pattern: `agents/tests/guards.ts`). The mock script can make an agent edit files
+Add the case to a test (pattern: `agents/engine/tests/guards.ts`). The mock script can make an agent edit files
 (`edits`), write stray files (`stray`) and add text to its report (`say`). Watch the test fail
 before you fix it.
 
@@ -43,7 +43,7 @@ Smallest change in the engine that handles the case; keep agents' real blockers 
 working. Then:
 
 ```bash
-cd agents && npx tsc --noEmit && npm test
+cd agents/engine && npx tsc --noEmit && npm test
 ```
 
 ## 4. Apply to the live run and commit

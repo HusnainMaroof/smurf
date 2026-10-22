@@ -1,7 +1,7 @@
 // Command Code's --output-format json: NDJSON, the last result line carries text, tokens and the real error.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { parseCommandCode } from "../engine/src/adapters/cli.ts";
+import { parseCommandCode } from "../src/adapters/cli.ts";
 
 const ok = parseCommandCode(
   [
@@ -25,7 +25,7 @@ assert.equal(bad?.tokensIn, 0);
 assert.equal(parseCommandCode("not json"), null);
 
 // the Freebuff driver always ends with a JSON line the claude-json parser reads, even when it cannot start
-const fb = spawnSync(process.execPath, ["engine/scripts/freebuff_drive.cjs", "run", "--cwd", ".", "--prompt-file", "nope.txt"], {
+const fb = spawnSync(process.execPath, ["scripts/freebuff_drive.cjs", "run", "--cwd", ".", "--prompt-file", "nope.txt"], {
   encoding: "utf8",
   env: { ...process.env, FREEBUFF_BIN: "/no/such/freebuff" },
 });

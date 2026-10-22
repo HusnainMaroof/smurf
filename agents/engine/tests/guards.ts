@@ -4,12 +4,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadConfig } from "../engine/src/config.ts";
-import { Engine } from "../engine/src/engine.ts";
-import { blockedLines } from "../engine/src/nodes/agent.ts";
-import { arr, questionChoices } from "../engine/src/nodes/senior.ts";
-import { mergeRun, runSummary } from "../engine/src/ship.ts";
-import { git, writeJson } from "../engine/src/util.ts";
+import { loadConfig } from "../src/config.ts";
+import { Engine } from "../src/engine.ts";
+import { blockedLines } from "../src/nodes/agent.ts";
+import { arr, questionChoices } from "../src/nodes/senior.ts";
+import { mergeRun, runSummary } from "../src/ship.ts";
+import { git, writeJson } from "../src/util.ts";
 
 for (const l of ["BLOCKED: none.", "- BLOCKED: none — finding established.", "**BLOCKED:** none", "BLOCKED: N/A", "BLOCKED: no", "BLOCKED: cannot write `.orch-report.md` — plan mode"])
   assert.deepEqual(blockedLines(l), [], l);

@@ -85,6 +85,6 @@ Accepted work is on branch `orch/<run>`; nothing touches `main` until you merge.
 
 ## 5. Change the engine
 
-Follow `AGENTS.md`. Every behaviour change gets a mock-provider test (pattern: `agents/tests/guards.ts`),
+Follow `AGENTS.md`. Every behaviour change gets a mock-provider test (pattern: `agents/engine/tests/guards.ts`),
 then `npx tsc --noEmit` and `npm test` must pass. When a real run shows a bug, fix the engine and
 add the case to a test so it stays fixed.

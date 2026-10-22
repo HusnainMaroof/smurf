@@ -7,9 +7,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadConfig } from "../engine/src/config.ts";
-import { Engine } from "../engine/src/engine.ts";
-import { git, writeJson } from "../engine/src/util.ts";
+import { loadConfig } from "../src/config.ts";
+import { Engine } from "../src/engine.ts";
+import { git, writeJson } from "../src/util.ts";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-e2e-"));
 const repo = path.join(tmp, "repo");

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { installSkills, toolReport, writeLocal } from "../engine/scripts/setup.ts";
+import { installSkills, toolReport, writeLocal } from "../scripts/setup.ts";
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-setup-"));
 fs.mkdirSync(path.join(tmp, "config"));

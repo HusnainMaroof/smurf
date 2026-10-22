@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { classify } from "../engine/src/adapters/common.ts";
-import { countDiffLines } from "../engine/src/workspace.ts";
-import { pickReady, ownFollowUps } from "../engine/src/nodes/flow.ts";
-import type { RunState, Task } from "../engine/src/types.ts";
-import { git, shell, watchWindow, type WatchInfo } from "../engine/src/util.ts";
+import { classify } from "../src/adapters/common.ts";
+import { countDiffLines } from "../src/workspace.ts";
+import { pickReady, ownFollowUps } from "../src/nodes/flow.ts";
+import type { RunState, Task } from "../src/types.ts";
+import { git, shell, watchWindow, type WatchInfo } from "../src/util.ts";
 
 const task = (id: string, deps: string[] = [], status: Task["status"] = "pending"): Task => ({
   id, title: id, category: "coding", risk: "low", brief: "", files: [], deps, checks: [], status, attempts: [], excluded: [], reassigns: 0,
