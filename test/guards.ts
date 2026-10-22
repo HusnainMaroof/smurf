@@ -7,12 +7,18 @@ import path from "node:path";
 import { loadConfig } from "../src/config.ts";
 import { Engine } from "../src/engine.ts";
 import { blockedLines } from "../src/nodes/agent.ts";
+import { arr } from "../src/nodes/senior.ts";
 import { mergeRun, runSummary } from "../src/ship.ts";
 import { git, writeJson } from "../src/util.ts";
 
 for (const l of ["BLOCKED: none.", "- BLOCKED: none — finding established.", "**BLOCKED:** none", "BLOCKED: N/A", "BLOCKED: no", "BLOCKED: cannot write `.orch-report.md` — plan mode"])
   assert.deepEqual(blockedLines(l), [], l);
 for (const l of ["BLOCKED: a dependency must change", "BLOCKED: no access to the staging database"]) assert.equal(blockedLines(l).length, 1, l);
+
+// a senior question given as an object (real run) reads as text, not "[object Object]"
+const q = arr([{ question: "Node 24 only?", whyBlocking: "two designs", options: ["yes", "no"] }, "plain", { x: 1 }]);
+assert.equal(q[0], "Node 24 only? (why it matters: two designs) Options: (1) yes (2) no");
+assert.deepEqual(q.slice(1), ["plain", '{"x":1}']);
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-guards-"));
 const repo = path.join(tmp, "repo");

@@ -219,6 +219,17 @@ export const seniorNodes: NodeType[] = [
   },
 ];
 
-function arr(v: unknown): string[] {
-  return Array.isArray(v) ? v.map((x) => String(x)) : v ? [String(v)] : [];
+/** Senior lists as text. Models sometimes answer with objects ({question, whyBlocking, options}); String() would turn those into "[object Object]". */
+export function arr(v: unknown): string[] {
+  return Array.isArray(v) ? v.map(asText) : v ? [asText(v)] : [];
+}
+
+function asText(x: unknown): string {
+  if (x === null || typeof x !== "object") return String(x);
+  const o = x as Record<string, unknown>;
+  const main = o.question ?? o.text ?? o.description ?? o.title;
+  if (typeof main !== "string") return JSON.stringify(x);
+  const why = typeof o.whyBlocking === "string" ? ` (why it matters: ${o.whyBlocking})` : "";
+  const opts = Array.isArray(o.options) && o.options.length ? ` Options: ${o.options.map((p, i) => `(${i + 1}) ${String(p)}`).join(" ")}` : "";
+  return main + why + opts;
 }
