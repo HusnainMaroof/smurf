@@ -7,7 +7,7 @@ import path from "node:path";
 import { loadConfig } from "../src/config.ts";
 import { Engine } from "../src/engine.ts";
 import { blockedLines } from "../src/nodes/agent.ts";
-import { arr } from "../src/nodes/senior.ts";
+import { arr, questionChoices } from "../src/nodes/senior.ts";
 import { mergeRun, runSummary } from "../src/ship.ts";
 import { git, writeJson } from "../src/util.ts";
 
@@ -19,6 +19,11 @@ for (const l of ["BLOCKED: a dependency must change", "BLOCKED: no access to the
 const q = arr([{ question: "Node 24 only?", whyBlocking: "two designs", options: ["yes", "no"] }, "plain", { x: 1 }]);
 assert.equal(q[0], "Node 24 only? (why it matters: two designs) Options: (1) yes (2) no");
 assert.deepEqual(q.slice(1), ["plain", '{"x":1}']);
+
+// questionChoices extracts numbered choices from first question's options
+assert.deepEqual(questionChoices([{ question: "q", options: ["a", "b"] }]), ["1", "2"]);
+assert.deepEqual(questionChoices(["plain"]), []);
+assert.deepEqual(questionChoices(undefined), []);
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "orch-guards-"));
 const repo = path.join(tmp, "repo");
