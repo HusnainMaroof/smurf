@@ -5,6 +5,7 @@ import path from "node:path";
 import type { NodeType } from "./index.ts";
 import type { NodeCtx } from "../engine.ts";
 import { reviewPrompt, workerPrompt } from "../prompts.ts";
+import { fileNeighbours } from "../graph.ts";
 import type { Attempt, Evidence, Review, Task } from "../types.ts";
 import { REPORT_NAME } from "../adapters/common.ts";
 import { extractJson, now, shell, tail } from "../util.ts";
@@ -163,7 +164,7 @@ export const agentNodes: NodeType[] = [
         })
         .filter(Boolean);
       const n = t.attempts.length + 1;
-      const prompt = workerPrompt({ s, t, profile: p, cwd: t.worktree!, terse: engine.cfg.terse, apiEdit: adapter.kind === "api" && p.mode === "edit", depReports });
+      const prompt = workerPrompt({ s, t, profile: p, cwd: t.worktree!, terse: engine.cfg.terse, apiEdit: adapter.kind === "api" && p.mode === "edit", depReports, neighbours: t.files.length ? fileNeighbours(path.join(engine.cfg.vault, "Code", s.project.name, "graph.json"), t.files) : [] });
       log(`delegate ${t.id} #${n} -> ${key}`);
       const startedAt = now();
       const res = await engine.runModel(s, key, { mode: p.mode, prompt, cwd: t.worktree!, timeoutMin: t.timeoutMin ?? p.timeoutMin, logName: `${t.id}-a${n}`, allowedFiles: t.files });

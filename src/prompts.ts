@@ -98,6 +98,7 @@ export function workerPrompt(o: {
   terse: Terse;
   apiEdit: boolean;
   depReports: string[];
+  neighbours: string[];
 }) {
   const { s, t, profile, cwd } = o;
   const last = t.attempts[t.attempts.length - 1];
@@ -118,6 +119,7 @@ export function workerPrompt(o: {
     t.checks.length ? `ACCEPTANCE CHECKS (the engine runs these after you finish; run them yourself first if you can):\n${t.checks.map((c) => `- ${c.cmd}`).join("\n")}` : "",
     s.understanding ? `OVERALL GOAL (context only: other tasks cover the other parts; do only YOUR task, and do not report the other parts as BLOCKED): ${s.understanding.goal}` : "",
     otherTasks(s, t),
+    o.neighbours.length ? `RELATED FILES (from the code map: what your files use and what uses them; read them when your change affects them, edit only ALLOWED FILES):\n${o.neighbours.join("\n")}` : "",
     o.depReports.length ? `CONTEXT FROM EARLIER TASKS:\n${o.depReports.join("\n\n")}` : "",
     t.critique && last ? `CORRECTION (attempt ${t.attempts.length + 1}). Your previous attempt was rejected. Fix exactly these points, keep what was right:\n${t.critique}` : "",
     o.apiEdit ? `${FILE_PROTOCOL}\n\n${fileBodies}` : "",
