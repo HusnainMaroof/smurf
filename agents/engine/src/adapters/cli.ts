@@ -1,24 +1,28 @@
 // One adapter for every agentic CLI (Claude Code, Cline, OpenCode, Kilo, Codex, ...).
 // A CLI is described in config by command templates; adding a new CLI is config, not code.
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { ProviderConfig } from "../config.ts";
 import type { Adapter, ModelInfo, Mode, RunRequest, RunResult } from "../types.ts";
-import { commandExists, posix, ROOT, shell } from "../util.ts";
+import { BASH, commandExists, posix, ROOT, shell } from "../util.ts";
 import { classify, isErrorOnly, REPORT_NAME, stripAnsi } from "./common.ts";
 
 const FAKE_GIT = "/tmp/no-git-for-agents";
 
 // Some CLIs spawn a long-lived shared daemon (Cline's hub) whose working directory is
 // wherever the first run started. Inside a worktree it would lock that folder on Windows,
-// so the daemon is started once from a neutral folder and every run reuses it.
+// so the daemon is started once from a neutral folder and every run reuses it. It is
+// stopped when the engine exits; left running it stays after the run and piles up.
 const prestarted = new Map<string, Promise<unknown>>();
-function prestart(cmd: string) {
+function prestart(cmd: string, stop?: string) {
   if (!prestarted.has(cmd)) {
     const cwd = path.join(os.homedir(), ".orch");
     fs.mkdirSync(cwd, { recursive: true });
     prestarted.set(cmd, shell(cmd, { cwd, timeoutMs: 60_000 }));
+    // exit handlers must be synchronous
+    if (stop) process.once("exit", () => spawnSync(BASH, ["-c", stop], { cwd, timeout: 30_000 }));
   }
   return prestarted.get(cmd);
 }
@@ -101,7 +105,7 @@ export class CliAdapter implements Adapter {
   async run(req: RunRequest): Promise<RunResult> {
     const template = this.pc.run?.[req.mode];
     if (!template) throw new Error(`${this.id} has no ${req.mode} command`);
-    if (this.pc.prestart) await prestart(this.pc.prestart);
+    if (this.pc.prestart) await prestart(this.pc.prestart, this.pc.poststop);
     const base = req.logFile.replace(/\.log$/, "");
     const promptFile = posix(`${base}.prompt.txt`);
     const outFile = posix(`${base}.out.txt`);

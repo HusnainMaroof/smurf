@@ -138,6 +138,7 @@
       "enabled": true,
       "command": "cline",
       "prestart": "cline hub start --cwd \"$HOME/.orch\"",
+      "poststop": "cline hub stop --cwd \"$HOME/.orch\"",
       "billing": "free",
       "isolateGit": true,
       "parse": "text",

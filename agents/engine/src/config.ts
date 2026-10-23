@@ -13,6 +13,7 @@ export interface ProviderConfig {
   parse?: "text" | "claude-json" | "commandcode-json" | "out-file";
   answerAfter?: string;
   prestart?: string; // run once per process from ~/.orch before the first run, e.g. start a shared daemon outside any worktree
+  poststop?: string; // run when the engine process exits, after a prestart: stop that daemon so it does not outlive the run
   run?: Partial<Record<Mode, string>>;
   models?: { model: string; tier?: Tier; contextLength?: number; priceIn?: number; priceOut?: number }[];
   discover?: { url?: string; cmd?: string; match?: string; ollama?: string };

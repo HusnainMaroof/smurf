@@ -5,7 +5,9 @@
 import type { ProviderConfig } from "../config.ts";
 import type { Adapter, ModelInfo, Mode, RunRequest, RunResult } from "../types.ts";
 import { commandExists, ENGINE, posix } from "../util.ts";
+import fs from "node:fs";
 import { CliAdapter } from "./cli.ts";
+import { INFRA_FAILURES } from "./common.ts";
 
 export interface Backend {
   id: string;
@@ -59,7 +61,28 @@ export class OpenHandsAdapter implements Adapter {
       `${acp.env ? acp.env + " " : ""}"${this.pc.command}" -I '${script}' --acp '${acp.command}' --model '{model}'` +
       ` --session-mode '${mode}' --cwd '{cwd}' --prompt-file '{promptFile}' --idle-sec ${idleSec}${acp.warmupSec ? ` --warmup-sec ${acp.warmupSec}` : ""} --title '{title}' < /dev/null`;
     // the CLI adapter runs it: logging, stall/kill handling, JSON result, report file, failure class
-    const runner = new CliAdapter(this.id, { ...this.pc, kind: "cli", isolateGit: b.pc.isolateGit, prestart: b.pc.prestart, parse: "claude-json", run: { [req.mode]: line } });
-    return runner.run({ ...req, model: req.model.slice(b.id.length + 1) });
+    const runner = new CliAdapter(this.id, { ...this.pc, kind: "cli", isolateGit: b.pc.isolateGit, prestart: b.pc.prestart, poststop: b.pc.poststop, parse: "claude-json", run: { [req.mode]: line } });
+    const model = req.model.slice(b.id.length + 1);
+    const r = await runner.run({ ...req, model });
+    return r.failure === "no_response" ? this.probe(b, model, req, r) : r;
+  }
+
+  // Cline over ACP drops the provider's error (a 429 daily cap, a retired model) and just answers
+  // nothing. One tiny turn through the backend's own CLI shows the real error, so the cooldown fits it.
+  private async probe(b: Backend, model: string, req: RunRequest, r: RunResult): Promise<RunResult> {
+    if (!b.pc.run?.readonly) return r;
+    const p = await b.adapter.run({
+      model,
+      mode: "readonly",
+      prompt: "Reply with the single word OK. Do not use any tools.",
+      cwd: req.cwd,
+      timeoutMs: 90_000,
+      logFile: req.logFile.replace(/\.log$/, ".probe.log"),
+      title: `${req.title} probe`,
+      killMarkers: req.killMarkers,
+    });
+    if (!p.failure || !INFRA_FAILURES.includes(p.failure) || p.failure === "no_response") return r;
+    fs.appendFileSync(req.logFile, `\nprobe through ${b.id}: ${p.failure}\n`);
+    return { ...r, failure: p.failure };
   }
 }

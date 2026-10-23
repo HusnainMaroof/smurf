@@ -11,6 +11,10 @@ OpenHands cache reads stored apart (`tokensCached`, everywhere); coding/testing/
 reviewed; retired models -> not_found, empty ACP reply -> no_response; Command Code parse mode.
 Freebuff runs as an agent through a TUI driver (agents/engine/scripts/freebuff_drive.cjs); a 10-minute check-in stops
 agents that loop or make no progress; skill launch-agents.
+Done on 2026-10-23: an empty ACP reply (Cline over ACP hides provider errors) is re-checked with one
+tiny turn through the backend's own CLI, so a 429 / retired model gets the right failure class and
+cooldown (both bench failures that day were 429s, not missing credentials); `poststop` stops the
+Cline hub when the engine exits (it used to outlive every run).
 End-to-end tests on a cloned repo (`~/orch-e2e/clsx`): happy path and failure paths both pass.
 
 ## Next
