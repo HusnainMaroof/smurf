@@ -23,7 +23,7 @@ End-to-end tests on a cloned repo (`~/orch-e2e/clsx`): happy path and failure pa
       `enabled: true`.
 - [ ] Undo of out-of-scope edits next to good work has only the mock test (`agents/engine/tests/guards.ts`): in every
       real run so far agents stayed in scope or went fully out of scope. Watch for it in run reports.
-- [ ] Freebuff OPTIMIZED models (GLM 5.3 Flash, Muse Spark 1.3, GPT-6 Luna) are left out of routing
-      because they spend daily hours; if they are wanted, the router needs a per-day hours budget.
+- [x] Freebuff OPTIMIZED models (GLM 5.3 Flash, Muse Spark 1.3, GPT-6 Luna) are in routing, no daily budget;
+      when the free hours run out the driver refuses paid hours and reports a rate limit.
 - [ ] Benchmarks: run `./agents/orch bench --random 3 --per-task 2` (with
       `ORCH_CONFIG=agents/config/free-only.json`) now and then so the router keeps learning.

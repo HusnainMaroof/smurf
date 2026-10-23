@@ -67,7 +67,7 @@ Owner answers: `./agents/orch resume <run> --choice <option>`. Accepted work lan
 - Every ~10 minutes while agents run, check each one: `orch summary <run>`, the latest
   `"watch"` events in `agents/vault/Runs/<run>/events.jsonl`, and the agent's log tail. A loop or a
   silent agent is stopped, not waited out. The engine's own check-in (`limits.watchMin`) stops
-  agents that loop or make no progress; the `launch-agents` skill has the routine and which agent
+  agents that loop or make no progress; the `smurf-agents` skill has the routine and which agent
   to launch for which need.
 
 ## Reporting to the owner

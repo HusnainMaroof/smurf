@@ -1,5 +1,5 @@
 ---
-name: orch-ship
+name: smurf-ship
 description: Ship a piece of work end to end through the orchestrator with free agents - write the task batch, check it, run it, summarize, review, merge, commit. Use when the owner asks for a feature or fix to be done by the agents (not by you directly).
 ---
 
@@ -44,7 +44,7 @@ file (`git add agents/tasks/<name>.json`) so the work is traceable.
 - WAITING: read the question. Answer with `./agents/orch resume <run> --choice <option> [--note "..."]`
   (in the background again). For an escalation, read `agents/vault/Runs/<run>/<task>.md` first.
 - DONE: go to step 4. FAILED: read the error line and `events.jsonl`; if it is an engine bug, use
-  the `orch-fix` skill, fix it, then `resume`.
+  the `smurf-fix` skill, fix it, then `resume`.
 
 ## 4. Review
 

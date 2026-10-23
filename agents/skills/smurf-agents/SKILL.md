@@ -1,5 +1,5 @@
 ---
-name: launch-agents
+name: smurf-agents
 description: Launch the right agent tool (Claude Code, OpenCode, Kilo, Cline, OpenHands, Freebuff, Command Code, Codex) for a piece of work, as the supervisor, and check on every running agent every 10 minutes so none loops or hangs unnoticed. Use when choosing which agent should do a task, starting agents through the orchestrator or directly, or supervising agents that are running.
 ---
 
@@ -29,7 +29,7 @@ credits), Codex (no model set). Retired today: any `minimax-m3.1-flash:free` and
 Through the orchestrator (default: worktree, scope, checks, review, routing all handled):
 
 ```bash
-./agents/orch run-tasks <project> agents/tasks/<batch>.json "<title>"     # preset tasks; see the orch-ship skill
+./agents/orch run-tasks <project> agents/tasks/<batch>.json "<title>"     # preset tasks; see the smurf-ship skill
 ./agents/orch run <project> "<request>"                             # the senior plans
 ./agents/orch bench --tasks <bench-task> --models "<key>,<key>"     # try one model on a known task
 ```
@@ -67,7 +67,7 @@ Your part as supervisor, every ~10 minutes while anything runs:
 3. Look at the agent's own log tail: `tail -20 agents/vault/Runs/<run>/logs/<task>-a<n>.log`. Repeating
    lines, the same question restated, or only heartbeats = stuck, even before the watch fires.
 4. Stuck and the watch has not caught it: `./agents/orch abort <run>` (or kill that agent's
-   process), then resume or rerun; note it in `TODO.md` and fix the cause (`orch-fix` skill).
+   process), then resume or rerun; note it in `TODO.md` and fix the cause (`smurf-fix` skill).
 5. Tell the owner the state (done, running, next) as a short list.
 
 For agents you launched directly there is no engine watch: do steps 3-4 yourself, and use the

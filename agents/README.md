@@ -137,10 +137,11 @@ For a Claude Code session acting as the supervisor. They live in `agents/skills/
 
 | Skill | For |
 |---|---|
-| `orchestrator` | Operating and changing the orchestrator |
-| `orch-ship` | Ship work through the agents: batch, check, run, review, merge |
-| `orch-fix` | Turn a real run problem into an engine fix with a test |
-| `launch-agents` | Which agent for which need, how to launch each one, the 10-minute check on running agents |
+| `smurf` | Operating and changing the orchestrator |
+| `smurf-go` | One request, whole workflow: senior plans, agents run, supervise, merge, report (`/smurf-go <request>`) |
+| `smurf-ship` | Ship work through the agents: batch, check, run, review, merge |
+| `smurf-fix` | Turn a real run problem into an engine fix with a test |
+| `smurf-agents` | Which agent for which need, how to launch each one, the 10-minute check on running agents |
 
 ## Layout
 

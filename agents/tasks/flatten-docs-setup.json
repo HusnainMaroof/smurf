@@ -5,11 +5,11 @@
     "category": "docs",
     "risk": "low",
     "timeoutMin": 20,
-    "files": ["AGENTS.md", ".claude/skills/orchestrator/SKILL.md", ".claude/skills/orch-ship/SKILL.md", ".claude/skills/orch-fix/SKILL.md"],
+    "files": ["AGENTS.md", ".claude/skills/orchestrator/SKILL.md", ".claude/skills/smurf-ship/SKILL.md", ".claude/skills/smurf-fix/SKILL.md"],
     "deps": [],
     "checks": [
       { "name": "no-old-paths", "cmd": "! grep -rn 'orchestrator/' AGENTS.md .claude/skills" },
-      { "name": "still-there", "cmd": "grep -q 'npx tsc --noEmit' AGENTS.md && grep -q 'ORCH_CONFIG=config/free-only.json' .claude/skills/orch-ship/SKILL.md" }
+      { "name": "still-there", "cmd": "grep -q 'npx tsc --noEmit' AGENTS.md && grep -q 'ORCH_CONFIG=config/free-only.json' .claude/skills/smurf-ship/SKILL.md" }
     ],
     "brief": "Markdown only. The folder orchestrator/ was moved to the repo root: src/, config/, test/, tasks/, vault/, package.json now sit at the top and every command runs from the repo root. Edit only the four files listed.\n1. AGENTS.md: line 3 says the code lives in `orchestrator/`: say it lives at the repo root. The heading `## Commands (run inside orchestrator/)` becomes `## Commands (run from the repo root)`.\n2. In the three SKILL.md files replace every `orchestrator/tasks/`, `orchestrator/vault/` with `tasks/`, `vault/`; replace \"Commands run in `orchestrator/`\", \"All commands run inside `orchestrator/`\", \"Then in `orchestrator/`:\" and \"The orchestrator in `orchestrator/`\" with wording that says the repo root; in the orchestrator skill's description change \"(orchestrator/)\" to \"(repo root)\".\nDo not change anything else: keep commands, tables and the frontmatter name lines exactly as they are."
   },

@@ -1,5 +1,5 @@
 ---
-name: orch-fix
+name: smurf-fix
 description: Turn something that went wrong in a real orchestrator run (wrong escalation, crash, wasted retry, bad routing, stuck run) into an engine fix with a regression test. Use when a run's summary, events or logs show the orchestrator itself misbehaved, not the agent's code.
 ---
 

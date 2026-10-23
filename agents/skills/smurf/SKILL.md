@@ -1,5 +1,5 @@
 ---
-name: orchestrator
+name: smurf
 description: Operate and improve the AI dev-team orchestrator in the agents/ folder. Use when running work through it (orch run / run-tasks / resume), writing task batches for the free agents, watching or debugging a run, reviewing and merging a run's integration branch, or changing the engine itself.
 ---
 
@@ -9,8 +9,9 @@ The orchestrator in `agents/` (command `./agents/orch`) is how work gets done he
 precise tasks, and free agents do them. Read `AGENTS.md` at the repo root for the code layout and
 conventions before changing the engine.
 
-Two focused skills cover the repeated routines: `orch-ship` (batch -> check -> run -> summary ->
-review -> merge) and `orch-fix` (real run problem -> engine fix + test). Use them instead of
+Focused skills cover the repeated routines: `smurf-go` (one request -> whole default workflow -> merge),
+`smurf-ship` (batch -> check -> run -> summary ->
+review -> merge) and `smurf-fix` (real run problem -> engine fix + test). Use them instead of
 re-deriving the steps.
 
 All commands run from the repo root. Prefix with `ORCH_CONFIG=agents/config/free-only.json` to use
